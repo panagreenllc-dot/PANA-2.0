@@ -1,6 +1,31 @@
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="text-xl font-bold tracking-wide">PANA 2.0</div>
+
+          <nav className="hidden gap-6 text-sm text-gray-300 md:flex">
+            <a href="#about" className="hover:text-white">
+              About
+            </a>
+            <a href="#techcon" className="hover:text-white">
+              Tech Con
+            </a>
+            <a href="#projects" className="hover:text-white">
+              Projects
+            </a>
+            <a href="#community" className="hover:text-white">
+              Community
+            </a>
+          </nav>
+
+          <button className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400">
+            Join Now
+          </button>
+        </div>
+      </header>
+
       <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <p className="mb-4 text-sm uppercase tracking-[0.35em] text-green-400">
           Welcome to PANA 2.0
@@ -25,7 +50,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-20">
+      <section id="techcon" className="mx-auto max-w-6xl px-6 py-20">
         <div className="grid gap-8 md:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <h2 className="mb-3 text-2xl font-bold">Tech Con</h2>
@@ -35,7 +60,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div id="projects" className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <h2 className="mb-3 text-2xl font-bold">Project Showcase</h2>
             <p className="text-gray-300">
               Highlight startups, apps, community ideas, and creative projects
@@ -43,7 +68,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div id="community" className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <h2 className="mb-3 text-2xl font-bold">Community</h2>
             <p className="text-gray-300">
               Build with other innovators, share feedback, and grow inside a
@@ -53,7 +78,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 py-20 text-center">
+      <section id="about" className="mx-auto max-w-5xl px-6 py-20 text-center">
         <h2 className="mb-4 text-4xl font-bold">Built for people with ideas</h2>
         <p className="mx-auto max-w-3xl text-lg text-gray-300">
           Whether you are launching a startup, building a new app, presenting at
