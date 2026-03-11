@@ -50,7 +50,7 @@ export default function Home() {
         </div>
       </section>
 
-      <<section id="techcon" className="mx-auto max-w-6xl px-6 py-24">
+      <section id="techcon" className="mx-auto max-w-6xl px-6 py-24">
   <h2 className="text-4xl font-bold text-center mb-12">
     PANA Tech Con
   </h2>
