@@ -1,3 +1,21 @@
+import sql from "@/lib/db";
+async function submitProject(formData: FormData) {
+  "use server";
+
+  const name = formData.get("name") as string;
+  const email = formData.get("email") as string;
+  const project_name = formData.get("project_name") as string;
+  const category = formData.get("category") as string;
+  const description = formData.get("description") as string;
+  const website = formData.get("website") as string;
+
+  await sql`
+    INSERT INTO projects
+    (name, email, project_name, category, description, website)
+    VALUES
+    (${name}, ${email}, ${project_name}, ${category}, ${description}, ${website})
+  `;
+}
 export default function SubmitProjectPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white">
@@ -17,7 +35,7 @@ export default function SubmitProjectPage() {
           </p>
         </div>
 
-        <form className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8">
+        <form action={submitProject} className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8">
           <div>
             <label className="mb-2 block text-sm text-gray-300">
               Your Name
