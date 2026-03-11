@@ -1,4 +1,5 @@
 import sql from "@/lib/db";
+
 async function submitProject(formData: FormData) {
   "use server";
 
@@ -16,6 +17,7 @@ async function submitProject(formData: FormData) {
     (${name}, ${email}, ${project_name}, ${category}, ${description}, ${website})
   `;
 }
+
 export default function SubmitProjectPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white">
@@ -35,12 +37,16 @@ export default function SubmitProjectPage() {
           </p>
         </div>
 
-        <form action={submitProject} className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8">
+        <form
+          action={submitProject}
+          className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8"
+        >
           <div>
             <label className="mb-2 block text-sm text-gray-300">
               Your Name
             </label>
             <input
+              name="name"
               type="text"
               placeholder="John Doe"
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
@@ -52,6 +58,7 @@ export default function SubmitProjectPage() {
               Email
             </label>
             <input
+              name="email"
               type="email"
               placeholder="founder@email.com"
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
@@ -63,6 +70,7 @@ export default function SubmitProjectPage() {
               Project Name
             </label>
             <input
+              name="project_name"
               type="text"
               placeholder="Startup or App Name"
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
@@ -74,13 +82,16 @@ export default function SubmitProjectPage() {
               Project Category
             </label>
 
-            <select className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none">
-              <option>AI</option>
-              <option>Startup</option>
-              <option>Cybersecurity</option>
-              <option>Robotics</option>
-              <option>Blockchain</option>
-              <option>Community</option>
+            <select
+              name="category"
+              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
+            >
+              <option value="AI">AI</option>
+              <option value="Startup">Startup</option>
+              <option value="Cybersecurity">Cybersecurity</option>
+              <option value="Robotics">Robotics</option>
+              <option value="Blockchain">Blockchain</option>
+              <option value="Community">Community</option>
             </select>
           </div>
 
@@ -90,6 +101,7 @@ export default function SubmitProjectPage() {
             </label>
 
             <textarea
+              name="description"
               rows={5}
               placeholder="Tell us what you're building..."
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
@@ -102,6 +114,7 @@ export default function SubmitProjectPage() {
             </label>
 
             <input
+              name="website"
               type="text"
               placeholder="https://github.com/your-project"
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
