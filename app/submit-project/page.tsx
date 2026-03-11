@@ -18,7 +18,6 @@ export default function SubmitProjectPage() {
         </div>
 
         <form className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8">
-          
           <div>
             <label className="mb-2 block text-sm text-gray-300">
               Your Name
@@ -57,9 +56,7 @@ export default function SubmitProjectPage() {
               Project Category
             </label>
 
-            <select
-              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
-            >
+            <select className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none">
               <option>AI</option>
               <option>Startup</option>
               <option>Cybersecurity</option>
@@ -99,7 +96,6 @@ export default function SubmitProjectPage() {
           >
             Submit Project
           </button>
-
         </form>
       </div>
     </main>
