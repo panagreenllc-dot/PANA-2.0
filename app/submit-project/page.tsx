@@ -1,4 +1,4 @@
-import sql from "@/lib/db";
+import sql from "../../lib/db";
 
 async function submitProject(formData: FormData) {
   "use server";
