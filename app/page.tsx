@@ -26,9 +26,7 @@ export default function Home() {
   </a>
 </nav>
 
-          <button className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400">
-            Join Now
-          </button>
+          
         </div>
       </header>
 
