@@ -5,22 +5,26 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="text-xl font-bold tracking-wide">PANA 2.0</div>
 
-          <<nav className="hidden gap-6 text-sm text-gray-300 md:flex">
+         <nav className="hidden gap-6 text-sm text-gray-300 md:flex">
   <a href="/" className="hover:text-white">
     Home
   </a>
+
   <a href="/techcon" className="hover:text-white">
     Tech Con
   </a>
+
   <a href="/projects" className="hover:text-white">
     Projects
   </a>
+
   <a
-  href="/submit-project"
-  className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400"
->
-  Join Now
-</a>
+    href="/submit-project"
+    className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400"
+  >
+    Join Now
+  </a>
+</nav>
 
           <button className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400">
             Join Now
