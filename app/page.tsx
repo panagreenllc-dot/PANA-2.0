@@ -16,13 +16,20 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col gap-4 sm:flex-row">
-          <button className="rounded-xl bg-green-500 px-6 py-3 font-semibold text-black hover:bg-green-400">
-            Join the Community
-          </button>
-          <button className="rounded-xl border border-white px-6 py-3 font-semibold hover:bg-white hover:text-black">
-            Explore Projects
-          </button>
-        </div>
+  <a
+    href="/submit-project"
+    className="rounded-xl bg-green-500 px-6 py-3 font-semibold text-black hover:bg-green-400"
+  >
+    Join the Community
+  </a>
+
+  <a
+    href="/projects"
+    className="rounded-xl border border-white px-6 py-3 font-semibold hover:bg-white hover:text-black"
+  >
+    Explore Projects
+  </a>
+</div>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-20">
