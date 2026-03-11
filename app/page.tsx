@@ -1,35 +1,6 @@
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="text-xl font-bold tracking-wide">PANA 2.0</div>
-
-         <nav className="hidden gap-6 text-sm text-gray-300 md:flex">
-  <a href="/" className="hover:text-white">
-    Home
-  </a>
-
-  <a href="/techcon" className="hover:text-white">
-    Tech Con
-  </a>
-
-  <a href="/projects" className="hover:text-white">
-    Projects
-  </a>
-
-  <a
-    href="/submit-project"
-    className="rounded-xl bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400"
-  >
-    Join Now
-  </a>
-</nav>
-
-          
-        </div>
-      </header>
-
       <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <p className="mb-4 text-sm uppercase tracking-[0.35em] text-green-400">
           Welcome to PANA 2.0
@@ -54,45 +25,35 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="techcon" className="mx-auto max-w-6xl px-6 py-24">
-  <h2 className="text-4xl font-bold text-center mb-12">
-    PANA Tech Con
-  </h2>
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="grid gap-8 md:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-3 text-2xl font-bold">Tech Con</h2>
+            <p className="text-gray-300">
+              Discover upcoming tech events, connect with founders, and register
+              for opportunities to present your ideas.
+            </p>
+          </div>
 
-  <div className="grid gap-8 md:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-3 text-2xl font-bold">Project Showcase</h2>
+            <p className="text-gray-300">
+              Highlight startups, apps, community ideas, and creative projects
+              built by people shaping the future.
+            </p>
+          </div>
 
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <h3 className="text-xl font-bold mb-2">Event Date</h3>
-      <p className="text-gray-300">
-        Coming Soon — Miami, Florida
-      </p>
-    </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-3 text-2xl font-bold">Community</h2>
+            <p className="text-gray-300">
+              Build with other innovators, share feedback, and grow inside a
+              network designed to support action and collaboration.
+            </p>
+          </div>
+        </div>
+      </section>
 
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <h3 className="text-xl font-bold mb-2">Startup Presentations</h3>
-      <p className="text-gray-300">
-        Founders and developers can present their projects to investors
-        and the tech community.
-      </p>
-    </div>
-
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <h3 className="text-xl font-bold mb-2">Networking</h3>
-      <p className="text-gray-300">
-        Connect with developers, entrepreneurs, investors, and builders.
-      </p>
-    </div>
-
-  </div>
-
-  <div className="text-center mt-12">
-    <button className="bg-green-500 text-black px-8 py-3 rounded-xl font-semibold hover:bg-green-400">
-      Apply to Present
-    </button>
-  </div>
-</section>
-
-      <section id="about" className="mx-auto max-w-5xl px-6 py-20 text-center">
+      <section className="mx-auto max-w-5xl px-6 py-20 text-center">
         <h2 className="mb-4 text-4xl font-bold">Built for people with ideas</h2>
         <p className="mx-auto max-w-3xl text-lg text-gray-300">
           Whether you are launching a startup, building a new app, presenting at
