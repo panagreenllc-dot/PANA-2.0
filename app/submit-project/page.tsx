@@ -1,10 +1,26 @@
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import sql from "../../lib/db";
 
 async function submitProject(formData: FormData) {
   "use server";
 
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  const user = await currentUser();
+
+  const name =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    user?.username ||
+    "Unknown Founder";
+
+  const email =
+    user?.primaryEmailAddress?.emailAddress || "";
+
   const project_name = formData.get("project_name") as string;
   const category = formData.get("category") as string;
   const description = formData.get("description") as string;
@@ -18,7 +34,13 @@ async function submitProject(formData: FormData) {
   `;
 }
 
-export default function SubmitProjectPage() {
+export default async function SubmitProjectPage() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white">
       <div className="mx-auto max-w-3xl">
@@ -43,30 +65,6 @@ export default function SubmitProjectPage() {
         >
           <div>
             <label className="mb-2 block text-sm text-gray-300">
-              Your Name
-            </label>
-            <input
-              name="name"
-              type="text"
-              placeholder="John Doe"
-              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-300">
-              Email
-            </label>
-            <input
-              name="email"
-              type="email"
-              placeholder="founder@email.com"
-              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-300">
               Project Name
             </label>
             <input
@@ -81,7 +79,6 @@ export default function SubmitProjectPage() {
             <label className="mb-2 block text-sm text-gray-300">
               Project Category
             </label>
-
             <select
               name="category"
               className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white focus:border-green-400 focus:outline-none"
@@ -99,7 +96,6 @@ export default function SubmitProjectPage() {
             <label className="mb-2 block text-sm text-gray-300">
               Project Description
             </label>
-
             <textarea
               name="description"
               rows={5}
@@ -110,9 +106,8 @@ export default function SubmitProjectPage() {
 
           <div>
             <label className="mb-2 block text-sm text-gray-300">
-              Website or GitHub (optional)
+              Website or GitHub
             </label>
-
             <input
               name="website"
               type="text"
