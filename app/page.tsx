@@ -1,77 +1,72 @@
-export default function Home() {
+import Link from "next/link";
+import sql, { type Row } from "@/lib/db";
+import ProjectCard from "@/components/ProjectCard";
+
+export const dynamic = "force-dynamic";
+
+async function latestProjects(): Promise<Row[]> {
+  try {
+    return await sql`
+      SELECT * FROM projects WHERE status = 'approved'
+      ORDER BY created_at DESC LIMIT 3`;
+  } catch {
+    return [];
+  }
+}
+
+export default async function Home() {
+  const projects = await latestProjects();
+
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <p className="mb-4 text-sm uppercase tracking-[0.35em] text-green-400">
-          Welcome to PANA 2.0
+    <main>
+      <section className="mx-auto max-w-4xl px-6 pb-20 pt-28 text-center">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">
+          Treasure Coast · Florida
         </p>
-
-        <h1 className="mb-6 max-w-4xl text-5xl font-bold leading-tight sm:text-6xl">
-          A community-driven platform for builders, innovators, and startups
+        <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
+          Where local builders launch what&apos;s next
         </h1>
-
-        <p className="mb-8 max-w-2xl text-lg text-gray-300">
-          PANA 2.0 helps entrepreneurs, creators, and tech communities connect,
-          showcase projects, discover opportunities, and bring bold ideas to life.
+        <p className="mx-auto mb-10 max-w-xl text-lg text-gray-400">
+          A community for founders and creators to share projects, find
+          collaborators, and meet at PANA Tech Con.
         </p>
-
-        <div className="flex flex-col gap-4 sm:flex-row">
-  <a
-    href="/submit-project"
-    className="rounded-xl bg-green-500 px-6 py-3 font-semibold text-black hover:bg-green-400"
-  >
-    Join the Community
-  </a>
-
-  <a
-    href="/projects"
-    className="rounded-xl border border-white px-6 py-3 font-semibold hover:bg-white hover:text-black"
-  >
-    Explore Projects
-  </a>
-</div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <h2 className="mb-3 text-2xl font-bold">Tech Con</h2>
-            <p className="text-gray-300">
-              Discover upcoming tech events, connect with founders, and register
-              for opportunities to present your ideas.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <h2 className="mb-3 text-2xl font-bold">Project Showcase</h2>
-            <p className="text-gray-300">
-              Highlight startups, apps, community ideas, and creative projects
-              built by people shaping the future.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <h2 className="mb-3 text-2xl font-bold">Community</h2>
-            <p className="text-gray-300">
-              Build with other innovators, share feedback, and grow inside a
-              network designed to support action and collaboration.
-            </p>
-          </div>
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <Link href="/sign-up" className="rounded-xl bg-green-500 px-6 py-3 font-semibold text-black transition hover:bg-green-400">
+            Join now
+          </Link>
+          <Link href="/projects" className="rounded-xl border border-white/20 px-6 py-3 font-semibold transition hover:bg-white hover:text-black">
+            Explore projects
+          </Link>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 py-20 text-center">
-        <h2 className="mb-4 text-4xl font-bold">Built for people with ideas</h2>
-        <p className="mx-auto max-w-3xl text-lg text-gray-300">
-          Whether you are launching a startup, building a new app, presenting at
-          Tech Con, or looking for a community that understands your vision,
-          PANA 2.0 is being built to give you a place to start and grow.
-        </p>
-      </section>
+      {projects.length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 pb-20">
+          <div className="mb-6 flex items-end justify-between">
+            <h2 className="text-2xl font-semibold">Latest projects</h2>
+            <Link href="/projects" className="text-sm text-green-400 hover:text-green-300">
+              View all →
+            </Link>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {projects.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
-      <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-gray-400">
-        © 2026 PANA 2.0. Built for innovators, founders, and builders.
-      </footer>
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-white/10 bg-gradient-to-br from-green-500/10 to-transparent p-8 sm:flex-row sm:items-center">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">PANA Tech Con</p>
+            <h2 className="text-2xl font-semibold">Talks, demos and pitches on the Treasure Coast</h2>
+          </div>
+          <Link href="/techcon" className="shrink-0 rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold transition hover:bg-white hover:text-black">
+            Event details
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
