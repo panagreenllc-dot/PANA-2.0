@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import sql from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { parseProjectId } from "@/lib/ids";
 import ProjectForm from "@/components/ProjectForm";
 import { updateProject } from "../../actions";
 
 export default async function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
   const id = parseProjectId(decodeURIComponent((await params).id));
   if (!id) notFound();
   const [project] = await sql`SELECT * FROM projects WHERE id::text = ${id}`;

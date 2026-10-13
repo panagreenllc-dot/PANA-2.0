@@ -12,6 +12,8 @@ export const NAV_LINKS = [
 ];
 
 async function pendingCount(): Promise<number | null> {
+  // Only ever called after the admin check below; re-check defensively.
+  if (!(await getAdmin().catch(() => null))) return null;
   try {
     const rows = await sql`SELECT count(*)::int AS n FROM projects WHERE status = 'pending'`;
     return rows[0]?.n ?? 0;
