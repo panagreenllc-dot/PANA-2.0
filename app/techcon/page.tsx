@@ -10,12 +10,17 @@ export const metadata: Metadata = {
 // PLACEHOLDERS — replace with real event details before launch.
 // ---------------------------------------------------------------------------
 const EVENT = {
-  date: "Date TBA", // PLACEHOLDER e.g. "Saturday, March 14, 2027"
+  date: "Sunday, February 21, 2027",
   time: "Time TBA", // PLACEHOLDER e.g. "9:00 AM – 5:00 PM"
   location: "Treasure Coast, Florida",
-  venue: "Venue TBA", // PLACEHOLDER
+  venue: "Havert L. Fenn Center",
+  address: "2000 Virginia Avenue, Fort Pierce, FL 34982",
   registrationUrl: "", // PLACEHOLDER: paste the registration link (Eventbrite, Luma, etc.)
 };
+
+const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+  `${EVENT.venue}, ${EVENT.address}`,
+)}`;
 
 const AGENDA: { time: string; title: string }[] = [
   // PLACEHOLDER agenda — replace with the real schedule
@@ -57,16 +62,24 @@ export default function TechConPage() {
             founders, engineers, students and investors.
           </p>
           <dl className="mb-10 grid max-w-3xl gap-6 sm:grid-cols-3">
-            {[
-              ["Date", `${EVENT.date}`],
-              ["Time", EVENT.time],
-              ["Location", `${EVENT.venue} · ${EVENT.location}`],
-            ].map(([k, v]) => (
-              <div key={k} className="border-l border-green-400/50 pl-4">
-                <dt className="text-xs uppercase tracking-wider text-gray-500">{k}</dt>
-                <dd className="mt-1 font-medium">{v}</dd>
-              </div>
-            ))}
+            <div className="border-l border-green-400/50 pl-4">
+              <dt className="text-xs uppercase tracking-wider text-gray-500">Date</dt>
+              <dd className="mt-1 font-medium">{EVENT.date}</dd>
+            </div>
+            <div className="border-l border-green-400/50 pl-4">
+              <dt className="text-xs uppercase tracking-wider text-gray-500">Time</dt>
+              <dd className="mt-1 font-medium">{EVENT.time}</dd>
+            </div>
+            <div className="border-l border-green-400/50 pl-4">
+              <dt className="text-xs uppercase tracking-wider text-gray-500">Venue</dt>
+              <dd className="mt-1 font-medium">
+                <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-white/30 underline-offset-4 hover:text-green-300">
+                  {EVENT.venue}
+                </a>
+                <span className="mt-1 block text-sm font-normal text-gray-400">{EVENT.address}</span>
+                <span className="block text-sm font-normal text-gray-400">{EVENT.location}</span>
+              </dd>
+            </div>
           </dl>
           <div className="flex flex-col gap-3 sm:flex-row">
             {EVENT.registrationUrl ? (
