@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 async function latestProjects(): Promise<Row[]> {
   try {
     return await sql`
-      SELECT * FROM projects WHERE status = 'approved'
+      SELECT id, name, project_name, category, description, website, created_at FROM projects WHERE status = 'approved'
       ORDER BY created_at DESC LIMIT 3`;
   } catch {
     return [];

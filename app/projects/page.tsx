@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Projects" };
 
 export default async function ProjectsPage() {
   const projects = await sql`
-    SELECT * FROM projects
+    SELECT id, name, project_name, category, description, website, created_at FROM projects
     WHERE status = 'approved'
     ORDER BY created_at DESC`;
 

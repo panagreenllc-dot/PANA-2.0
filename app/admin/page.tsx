@@ -1,10 +1,13 @@
 import sql from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import AdminProjectRow from "@/components/AdminProjectRow";
 import AdminNotice from "@/components/AdminNotice";
 import ConfirmButton from "@/components/ConfirmButton";
 import { approveProject, deleteProject } from "./actions";
 
 export default async function PendingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  // Auth check must run here, not only in the layout: Next renders layout and page in parallel.
+  await requireAdmin();
   const { error } = await searchParams;
   const projects = await sql`SELECT * FROM projects WHERE status = 'pending' ORDER BY created_at ASC`;
 

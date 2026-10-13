@@ -1,11 +1,13 @@
 import Link from "next/link";
 import sql from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import AdminProjectRow from "@/components/AdminProjectRow";
 import AdminNotice from "@/components/AdminNotice";
 import ConfirmButton from "@/components/ConfirmButton";
 import { deleteProject, unpublishProject } from "../actions";
 
 export default async function ListedProjectsPage({ searchParams }: { searchParams: Promise<{ q?: string; error?: string }> }) {
+  await requireAdmin();
   const { q = "", error } = await searchParams;
   const like = `%${q.trim()}%`;
   const projects = await sql`
