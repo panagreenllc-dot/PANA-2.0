@@ -8,13 +8,13 @@ export default function MobileNav({
   admin,
   pending,
 }: {
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; longLabel?: string }[];
   admin: boolean;
   pending: number;
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         aria-label="Toggle menu"
@@ -30,7 +30,7 @@ export default function MobileNav({
             {links.map((l) => (
               <li key={l.href}>
                 <Link href={l.href} onClick={() => setOpen(false)}>
-                  {l.label}
+                  {l.longLabel ?? l.label}
                 </Link>
               </li>
             ))}

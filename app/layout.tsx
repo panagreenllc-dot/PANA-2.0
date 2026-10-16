@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://panagreen.org"),
   title: { default: "PANA 2.0", template: "%s · PANA 2.0" },
   description:
-    "PANA 2.0 is a Treasure Coast community for founders, builders and innovators — showcase projects and join PANA Tech Con.",
+    "Where Community Meets Innovation. PANA 2.0 is a community-powered innovation ecosystem and virtual startup incubator connecting developers, entrepreneurs, creators, mentors and investors.",
   openGraph: { siteName: "PANA 2.0", url: "https://panagreen.org" },
 };
 
