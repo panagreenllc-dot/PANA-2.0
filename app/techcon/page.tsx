@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tech Con",
+  title: "Treasure Coast Tech Con",
   description: "PANA Tech Con — talks, startup showcases and pitches on the Treasure Coast, Florida.",
 };
 
@@ -53,7 +53,9 @@ export default function TechConPage() {
     <main>
       <section className="border-b border-white/10">
         <div className="mx-auto max-w-6xl px-6 pb-20 pt-24">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">PANA Tech Con</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">
+            <Link href="/" className="hover:text-green-300">PANA 2.0</Link> · Programs · Treasure Coast Tech Con
+          </p>
           <h1 className="mb-6 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
             The Treasure Coast&apos;s gathering for builders
           </h1>
@@ -91,7 +93,7 @@ export default function TechConPage() {
                 Registration opens soon
               </span>
             )}
-            <Link href="/submit-project" className="rounded-xl border border-white/20 px-6 py-3 text-center font-semibold transition hover:bg-white hover:text-black">
+            <Link href="/submit" className="rounded-xl border border-white/20 px-6 py-3 text-center font-semibold transition hover:bg-white hover:text-black">
               Apply to present
             </Link>
           </div>
@@ -128,7 +130,7 @@ export default function TechConPage() {
           {SPEAKERS.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-white/15 p-8 text-gray-400">
               Speakers will be announced soon. Interested in speaking?{" "}
-              <Link href="/submit-project" className="text-green-400 hover:text-green-300">Apply to present</Link>.
+              <Link href="/submit" className="text-green-400 hover:text-green-300">Apply to present</Link>.
             </p>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">

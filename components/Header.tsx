@@ -3,13 +3,9 @@ import { Show, UserButton } from "@clerk/nextjs";
 import { getAdmin } from "@/lib/auth";
 import sql from "@/lib/db";
 import MobileNav from "./MobileNav";
+import { NAV_LINKS } from "@/lib/site";
 
-export const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/techcon", label: "Tech Con" },
-  { href: "/projects", label: "Projects" },
-  { href: "/submit-project", label: "Submit" },
-];
+export { NAV_LINKS };
 
 async function pendingCount(): Promise<number | null> {
   // Only ever called after the admin check below; re-check defensively.
@@ -34,9 +30,9 @@ export default async function Header() {
           PANA 2.0
         </Link>
 
-        <nav className="hidden items-center gap-7 text-sm text-gray-300 md:flex">
+        <nav className="hidden items-center gap-5 whitespace-nowrap text-sm text-gray-300 lg:flex">
           {NAV_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="transition hover:text-white">
+            <Link key={l.href} href={l.href} title={l.longLabel} className="transition hover:text-white">
               {l.label}
             </Link>
           ))}
