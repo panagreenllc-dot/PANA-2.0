@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { requireMember } from "@/lib/members";
 import type { Metadata } from "next";
 import ProjectForm from "@/components/ProjectForm";
 import { submitProject } from "./actions";
@@ -7,8 +6,7 @@ import { submitProject } from "./actions";
 export const metadata: Metadata = { title: "Submit an Idea" };
 
 export default async function SubmitProjectPage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in?redirect_url=/submit");
+  await requireMember("/submit");
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">

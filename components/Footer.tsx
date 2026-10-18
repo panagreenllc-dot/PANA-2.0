@@ -12,6 +12,8 @@ export default function Footer() {
           <Link href="/community" className="hover:text-white">Community</Link>
           <Link href="/techcon" className="hover:text-white">Tech Con</Link>
           <Link href="/about" className="hover:text-white">About</Link>
+          <Link href="/terms" className="hover:text-white">Terms</Link>
+          <Link href="/privacy" className="hover:text-white">Privacy</Link>
         </nav>
       </div>
     </footer>

@@ -10,12 +10,12 @@ export default function Page() {
       eyebrow="Join the community"
       title="Join PANA 2.0 — it's free"
       points={[
-        "Showcase your startup, app or idea on the Projects page",
-        "Get first access to PANA Tech Con registration and pitch slots",
-        "Meet founders, engineers and investors on the Treasure Coast",
+        "Share your ideas and find collaborators",
+        "Access the PANA 2.0 virtual incubator as it launches",
+        "Membership is for adults 18 and older",
       ]}
     >
-      <SignUp appearance={clerkAppearance} signInUrl="/sign-in" />
+      <SignUp appearance={clerkAppearance} signInUrl="/sign-in" fallbackRedirectUrl="/welcome" />
     </AuthShell>
   );
 }

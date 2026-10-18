@@ -11,9 +11,10 @@ export default async function ListedProjectsPage({ searchParams }: { searchParam
   const { q = "", error } = await searchParams;
   const like = `%${q.trim()}%`;
   const projects = await sql`
-    SELECT * FROM projects WHERE status = 'approved'
-      AND (${q.trim() === ""} OR project_name ILIKE ${like} OR name ILIKE ${like} OR email ILIKE ${like})
-    ORDER BY created_at DESC`;
+    SELECT p.*, COALESCE(p.email, m.email) AS email FROM projects p LEFT JOIN members m ON m.user_id = p.user_id
+    WHERE p.status = 'approved'
+      AND (${q.trim() === ""} OR p.project_name ILIKE ${like} OR p.name ILIKE ${like} OR COALESCE(p.email, m.email) ILIKE ${like})
+    ORDER BY p.created_at DESC`;
 
   return (
     <section>
