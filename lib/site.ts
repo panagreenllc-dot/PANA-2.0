@@ -1,5 +1,4 @@
-// PLACEHOLDER: confirm the public contact address with the owner.
-export const CONTACT_EMAIL = "info@panagreen.org";
+export const CONTACT_EMAIL = "panagreenllc@gmail.com";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
