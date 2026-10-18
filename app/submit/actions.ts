@@ -7,7 +7,7 @@ import { MAX_PENDING_PER_USER, parseProject, type FormState } from "@/lib/projec
 
 export async function submitProject(_prev: FormState, formData: FormData): Promise<FormState> {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in?redirect_url=/submit-project");
+  if (!userId) redirect("/sign-in?redirect_url=/submit");
 
   const user = await currentUser();
   if (!user || user.banned) {
@@ -36,5 +36,5 @@ export async function submitProject(_prev: FormState, formData: FormData): Promi
     VALUES (${name}, ${email}, ${data.project_name}, ${data.category}, ${data.description},
             ${data.website || null}, ${userId}, 'pending')`;
 
-  redirect("/submit-project/thanks");
+  redirect("/submit/thanks");
 }
