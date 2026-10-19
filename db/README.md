@@ -46,4 +46,4 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 | # | File | Applied to production | By | Notes |
 |---|------|-----------------------|----|-------|
 | 001 | 001_moderation.sql | before 2026-10-18 | owner (Neon SQL Editor) | status/user_id/review columns |
-| 002–005 | members/audit, profiles/reports, ideas v2, collaboration | **not applied to production** | — | Phase 2 PR 1; preview branches only |
+| 002–005 | members/audit, profiles/reports, ideas v2, collaboration | 2026-10-19 16:40 EDT | runner `--allow-production` (owner approved in writing) | Phase 2 PR 1. Backup taken first (logical JSON dump, LSN 0/6524B60) |
