@@ -10,12 +10,12 @@ export default function Page() {
       eyebrow="Welcome back"
       title="Sign in to PANA 2.0"
       points={[
-        "Submit and manage your projects",
-        "Apply to present at PANA Tech Con",
-        "Connect with Treasure Coast builders",
+        "Share and manage your ideas",
+        "Find collaborators in the community",
+        "Apply to present at Treasure Coast Tech Con",
       ]}
     >
-      <SignIn appearance={clerkAppearance} signUpUrl="/sign-up" />
+      <SignIn appearance={clerkAppearance} signUpUrl="/sign-up" fallbackRedirectUrl="/ideas" />
     </AuthShell>
   );
 }

@@ -1,4 +1,4 @@
-// Run: npx tsx lib/ids.test.ts   
+// Run: npm test
 import assert from "node:assert/strict";
 import { parseProjectId } from "./ids";
 

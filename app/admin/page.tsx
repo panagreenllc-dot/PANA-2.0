@@ -9,7 +9,9 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
   // Auth check must run here, not only in the layout: Next renders layout and page in parallel.
   await requireAdmin();
   const { error } = await searchParams;
-  const projects = await sql`SELECT * FROM projects WHERE status = 'pending' ORDER BY created_at ASC`;
+  const projects = await sql`
+    SELECT p.*, COALESCE(p.email, m.email) AS email FROM projects p LEFT JOIN members m ON m.user_id = p.user_id
+    WHERE p.status = 'pending' ORDER BY p.created_at ASC`;
 
   return (
     <section>

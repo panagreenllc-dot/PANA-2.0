@@ -24,3 +24,8 @@ export default function sql(
 ): Promise<Row[]> {
   return getClient()(strings, ...values) as Promise<Row[]>;
 }
+
+/** The raw Neon client, for atomic multi-statement work: `raw().transaction([raw()\`...\`, ...])`. */
+export function raw(): NeonQueryFunction<false, false> {
+  return getClient();
+}

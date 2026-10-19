@@ -8,6 +8,16 @@ import { parseProjectId } from "@/lib/ids";
 import { requireAdmin } from "@/lib/auth";
 import { parseProject, type FormState } from "@/lib/projects";
 
+/** Best-effort audit trail; never blocks the admin action. */
+async function audit(adminId: string, action: string, targetType: string, targetId: string, note?: string) {
+  try {
+    await sql`INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, note)
+              VALUES (${adminId}, ${action}, ${targetType}, ${targetId}, ${note ?? null})`;
+  } catch (e) {
+    console.error("audit log write failed", e);
+  }
+}
+
 function refresh() {
   revalidatePath("/", "layout");
 }
@@ -48,6 +58,7 @@ export async function approveProject(formData: FormData) {
   await run(formData, () => sql`
     UPDATE projects SET status = 'approved', reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
     WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
+  await audit(admin.id, "approve", "idea", id);
 }
 
 export async function unpublishProject(formData: FormData) {
@@ -56,17 +67,19 @@ export async function unpublishProject(formData: FormData) {
   await run(formData, () => sql`
     UPDATE projects SET status = 'pending', reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
     WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
+  await audit(admin.id, "unpublish", "idea", id);
 }
 
 export async function deleteProject(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = idOf(formData);
   await run(formData, () => sql`DELETE FROM projects WHERE id::text = ${id} RETURNING id`,
     "Project not found (it may already have been deleted).");
+  await audit(admin.id, "delete", "idea", id);
 }
 
 export async function updateProject(rawId: string, _prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = parseProjectId(rawId);
   if (!id) return { error: "Invalid project id." };
   const { data, state } = parseProject(formData);
@@ -82,6 +95,7 @@ export async function updateProject(rawId: string, _prev: FormState, formData: F
     return { error: "Database error — please try again.", values: data };
   }
   if (rows.length === 0) return { error: "Project not found.", values: data };
+  await audit(admin.id, "edit", "idea", id);
   refresh();
   redirect("/admin/projects");
 }
@@ -98,34 +112,42 @@ async function guardNotSelf(formData: FormData) {
   const admin = await requireAdmin();
   const target = userIdOf(formData);
   if (target === admin.id) throw new Error("You can't perform this action on your own account.");
-  return target;
+  return { target, admin };
 }
 
 export async function setAdmin(formData: FormData) {
-  const target = await guardNotSelf(formData);
+  const { target, admin } = await guardNotSelf(formData);
   const makeAdmin = formData.get("makeAdmin") === "true";
   const client = await clerkClient();
   const user = await client.users.getUser(target);
   await client.users.updateUserMetadata(target, {
     publicMetadata: { ...user.publicMetadata, role: makeAdmin ? "admin" : null },
   });
+  await audit(admin.id, makeAdmin ? "grant_admin" : "revoke_admin", "member", target);
   revalidatePath("/admin/members");
 }
 
 export async function setBanned(formData: FormData) {
-  const target = await guardNotSelf(formData);
+  const { target, admin } = await guardNotSelf(formData);
   const client = await clerkClient();
-  if (formData.get("ban") === "true") await client.users.banUser(target);
+  const ban = formData.get("ban") === "true";
+  if (ban) await client.users.banUser(target);
   else await client.users.unbanUser(target);
+  await sql`UPDATE members SET status = ${ban ? "banned" : "active"}, updated_at = now() WHERE user_id = ${target} AND status <> 'deleted'`.catch(
+    (e) => console.error("member status sync failed", e));
+  await audit(admin.id, ban ? "ban" : "unban", "member", target);
   revalidatePath("/admin/members");
 }
 
 export async function deleteMember(formData: FormData) {
-  const target = await guardNotSelf(formData);
+  const { target, admin } = await guardNotSelf(formData);
   if (formData.get("deleteProjects") === "on") {
     await sql`DELETE FROM projects WHERE user_id = ${target}`;
   }
   const client = await clerkClient();
   await client.users.deleteUser(target);
+  // The Clerk webhook (user.deleted) also cleans up; this covers the case where it isn't configured yet.
+  await sql`DELETE FROM members WHERE user_id = ${target}`.catch((e) => console.error("member delete failed", e));
+  await audit(admin.id, "delete_member", "member", target);
   refresh();
 }
