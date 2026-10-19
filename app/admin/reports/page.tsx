@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import AdminNotice from "@/components/AdminNotice";
 import ConfirmButton from "@/components/ConfirmButton";
 import { REPORT_REASONS } from "@/lib/profile-input";
-import { hideProfile, resolveReport, unhideProfile } from "../moderation-actions";
+import { hideIdea, hideProfile, resolveReport, restoreIdea, unhideProfile } from "../moderation-actions";
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await requireAdmin();
@@ -12,8 +12,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const reports = await sql`
     SELECT r.id, r.target_type, r.target_id, r.reason, r.details, r.created_at,
            p.display_name, p.moderation, p.hidden_reason, p.is_published,
+           pr.project_name, pr.hidden_by_reports, pr.status AS idea_status,
            (SELECT count(*)::int FROM reports r2 WHERE r2.target_type = r.target_type AND r2.target_id = r.target_id AND r2.status = 'open') AS open_count
     FROM reports r LEFT JOIN profiles p ON r.target_type = 'profile' AND p.user_id = r.target_id
+    LEFT JOIN projects pr ON r.target_type = 'idea' AND pr.id::text = r.target_id
     WHERE r.status = 'open' ORDER BY r.created_at ASC LIMIT 200`;
   const reasonLabel = (v: string) => REPORT_REASONS.find((r) => r.value === v)?.label ?? v;
   const btn = "rounded-lg border px-3 py-1.5 text-xs font-semibold";
@@ -34,7 +36,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   <p className="mt-1 font-semibold">
                     {r.target_type === "profile" ? (
                       <Link href={`/members/${r.target_id}`} className="underline">{r.display_name ?? r.target_id}</Link>
+                    ) : r.target_type === "idea" ? (
+                      <Link href={`/ideas/${r.target_id}`} className="underline">{r.project_name ?? r.target_id}</Link>
                     ) : r.target_id}
+                    {r.hidden_by_reports && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden</span>}
                     {r.moderation === "hidden" && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden{r.hidden_reason ? `: ${r.hidden_reason}` : ""}</span>}
                   </p>
                   <p className="mt-1 text-sm text-red-300">{reasonLabel(r.reason)}</p>
@@ -54,6 +59,21 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                       <input type="hidden" name="back" value="/admin/reports" />
                       <input type="hidden" name="userId" value={r.target_id} />
                       <ConfirmButton message="Restore this profile and dismiss its open reports?" className={`${btn} border-white/20 hover:bg-white/10`}>Restore &amp; dismiss all</ConfirmButton>
+                    </form>
+                  )}
+                  {r.target_type === "idea" && r.project_name && !r.hidden_by_reports && (
+                    <form action={hideIdea}>
+                      <input type="hidden" name="back" value="/admin/reports" />
+                      <input type="hidden" name="ideaId" value={r.target_id} />
+                      <input type="hidden" name="note" value={`Report: ${reasonLabel(r.reason)}`} />
+                      <ConfirmButton message="Hide this idea from everyone except its owner?" className={`${btn} border-red-500/40 text-red-300 hover:bg-red-500/10`}>Hide idea</ConfirmButton>
+                    </form>
+                  )}
+                  {r.target_type === "idea" && r.hidden_by_reports && (
+                    <form action={restoreIdea}>
+                      <input type="hidden" name="back" value="/admin/reports" />
+                      <input type="hidden" name="ideaId" value={r.target_id} />
+                      <ConfirmButton message="Restore this idea and dismiss its open reports?" className={`${btn} border-white/20 hover:bg-white/10`}>Restore &amp; dismiss all</ConfirmButton>
                     </form>
                   )}
                   <form action={resolveReport}>

@@ -14,7 +14,20 @@ export default function AdminProjectRow({ project, children }: { project: Row; c
           <p className="mb-3 text-sm text-gray-400">
             {project.name} {project.email && <>· <a href={`mailto:${project.email}`} className="underline">{project.email}</a></>}
           </p>
+          <p className="mb-2 text-xs text-gray-500">
+            {project.kind} · {project.stage} · card: {project.audience === "members" ? "members only" : "public"}
+            {project.owner_edited_at && <> · <span className="text-yellow-300">edited by owner {new Date(project.owner_edited_at).toLocaleString()}</span></>}
+            {project.hidden_by_reports && <> · <span className="text-red-300">hidden by reports</span></>}
+          </p>
           <p className="whitespace-pre-wrap text-sm text-gray-300">{project.description}</p>
+          {project.details && (
+            <p className="mt-2 whitespace-pre-wrap text-sm text-gray-400">
+              <span className="text-xs uppercase text-gray-500">Details ({project.field_visibility?.details ?? "members"}): </span>{project.details}
+            </p>
+          )}
+          {project.help_needed?.length > 0 && (
+            <p className="mt-1 text-xs text-gray-400">Help needed ({project.field_visibility?.help_needed ?? "public"}): {project.help_needed.join(", ")}</p>
+          )}
           {project.website && (
             <a href={project.website} target="_blank" rel="noopener noreferrer nofollow" className="mt-2 inline-block break-all text-sm text-green-400">
               {project.website}

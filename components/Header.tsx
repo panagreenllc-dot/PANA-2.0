@@ -60,6 +60,9 @@ export default async function Header() {
             </Link>
           </Show>
           <Show when="signed-in">
+            <Link href="/me" className="text-sm font-semibold text-gray-200 transition hover:text-white">
+              My PANA
+            </Link>
             <UserButton />
           </Show>
           <MobileNav links={NAV_LINKS} admin={!!admin} pending={pending ?? 0} />

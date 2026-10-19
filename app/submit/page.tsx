@@ -1,6 +1,6 @@
 import { requireMember } from "@/lib/members";
 import type { Metadata } from "next";
-import ProjectForm from "@/components/ProjectForm";
+import IdeaForm from "@/components/IdeaForm";
 import { submitProject } from "./actions";
 
 export const metadata: Metadata = { title: "Submit an Idea" };
@@ -16,7 +16,7 @@ export default async function SubmitProjectPage() {
         Submissions are reviewed by the PANA team before they appear publicly — usually within a few days.
         Early ideas and working projects are both welcome. Want to present at Treasure Coast Tech Con? Mention it in your description.
       </p>
-      <ProjectForm action={submitProject} submitLabel="Submit for review" />
+      <IdeaForm action={submitProject} submitLabel="Submit for review" />
     </main>
   );
 }

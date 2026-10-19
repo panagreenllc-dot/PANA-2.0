@@ -1,15 +1,17 @@
 import Link from "next/link";
-import sql, { type Row } from "@/lib/db";
+import { browseIdeas } from "@/lib/ideas-repo";
+import { toIdeaView, type ViewerCtx } from "@/lib/visibility";
+
+const ANON: ViewerCtx = { userId: null, status: "anon", isAdmin: false };
 import ProjectCard from "@/components/ProjectCard";
 import { CardGrid, btnPrimary, btnSecondary } from "@/components/PageIntro";
 
 export const dynamic = "force-dynamic";
 
-async function latestIdeas(): Promise<Row[]> {
+async function latestIdeas() {
   try {
-    return await sql`
-      SELECT id, name, project_name, category, description, website, created_at FROM projects WHERE status = 'approved'
-      ORDER BY created_at DESC LIMIT 3`;
+    const { rows } = await browseIdeas(false, { limit: 3 }); // homepage: public ideas only
+    return rows.map((r) => ({ v: toIdeaView(ANON, r), by: r.name })).filter((x) => x.v);
   } catch {
     return [];
   }
@@ -79,8 +81,8 @@ export default async function Home() {
             </Link>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
-            {ideas.map((p) => (
-              <ProjectCard key={p.id} project={p} />
+            {ideas.map((x) => (
+              <ProjectCard key={x.v!.id} project={x.v!} by={x.by} />
             ))}
           </div>
         </section>
