@@ -7,7 +7,8 @@ import sql, { type Row } from "@/lib/db";
 import { parseProjectId } from "@/lib/ids";
 import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { parseProject, type FormState } from "@/lib/projects";
+import { parseIdea, type IdeaFormState } from "@/lib/ideas";
+import { updateIdeaByAdmin } from "@/lib/ideas-repo";
 
 function refresh() {
   revalidatePath("/", "layout");
@@ -47,7 +48,7 @@ export async function approveProject(formData: FormData) {
   const admin = await requireAdmin();
   const id = idOf(formData);
   await run(formData, () => sql`
-    UPDATE projects SET status = 'approved', reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
+    UPDATE projects SET status = 'approved', moderation_note = NULL, reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
     WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
   await audit(admin.id, "approve", "idea", id);
 }
@@ -69,26 +70,41 @@ export async function deleteProject(formData: FormData) {
   await audit(admin.id, "delete", "idea", id);
 }
 
-export async function updateProject(rawId: string, _prev: FormState, formData: FormData): Promise<FormState> {
+export async function updateProject(rawId: string, _prev: IdeaFormState, formData: FormData): Promise<IdeaFormState> {
   const admin = await requireAdmin();
   const id = parseProjectId(rawId);
   if (!id) return { error: "Invalid project id." };
-  const { data, state } = parseProject(formData);
+  const { data, state } = parseIdea(formData);
   if (!data) return state!;
-  let rows: Row[];
+  let ok = false;
   try {
-    rows = await sql`
-      UPDATE projects SET project_name = ${data.project_name}, category = ${data.category},
-        description = ${data.description}, website = ${data.website || null}, updated_at = now()
-      WHERE id::text = ${id} RETURNING id`;
+    ok = await updateIdeaByAdmin(id, data);
   } catch (e) {
     console.error("updateProject failed", e);
     return { error: "Database error — please try again.", values: data };
   }
-  if (rows.length === 0) return { error: "Project not found.", values: data };
+  if (!ok) return { error: "Project not found.", values: data };
   await audit(admin.id, "edit", "idea", id);
   refresh();
   redirect("/admin/projects");
+}
+
+async function setReviewStatus(formData: FormData, status: "changes_requested" | "rejected") {
+  const admin = await requireAdmin();
+  const id = idOf(formData);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
+  await run(formData, () => sql`
+    UPDATE projects SET status = ${status}, moderation_note = ${note}, reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
+    WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
+  await audit(admin.id, status === "rejected" ? "reject" : "request_changes", "idea", id, note ?? undefined);
+}
+
+export async function requestChanges(formData: FormData) {
+  await setReviewStatus(formData, "changes_requested");
+}
+
+export async function rejectProject(formData: FormData) {
+  await setReviewStatus(formData, "rejected");
 }
 
 // ----- Members -----

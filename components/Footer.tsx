@@ -1,10 +1,11 @@
+import { currentYear } from "@/lib/datetime";
 import Link from "next/link";
 
 export default function Footer() {
   return (
     <footer className="border-t border-white/10">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-8 text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} PANA 2.0 · Where Community Meets Innovation</p>
+        <p>© {currentYear()} PANA 2.0 · Where Community Meets Innovation</p>
         <nav className="flex flex-wrap gap-x-6 gap-y-2">
           <Link href="/ideas" className="hover:text-white">Explore Ideas</Link>
           <Link href="/submit" className="hover:text-white">Submit an Idea</Link>

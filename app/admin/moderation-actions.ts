@@ -71,3 +71,34 @@ export async function resolveReport(fd: FormData) {
   await audit(admin.id, status === "actioned" ? "report_actioned" : "report_dismissed", "report", id, `${r[0].target_type}:${r[0].target_id}`);
   done(fd);
 }
+
+function ideaTarget(fd: FormData): string {
+  const id = parseProjectId(fd.get("ideaId"));
+  if (!id) done(fd, "Invalid idea id.");
+  return id;
+}
+
+export async function hideIdea(fd: FormData) {
+  const admin = await requireAdmin();
+  const id = ideaTarget(fd);
+  const r = await sql`UPDATE projects SET hidden_by_reports = true, updated_at = now() WHERE id::text = ${id} RETURNING id`;
+  if (!r.length) done(fd, "Idea not found.");
+  await sql`UPDATE reports SET status = 'actioned', resolved_by = ${admin.id}, resolved_at = now()
+            WHERE target_type = 'idea' AND target_id = ${id} AND status = 'open'`;
+  await audit(admin.id, "hide", "idea", id, note(fd) || undefined);
+  revalidatePath("/ideas");
+  done(fd);
+}
+
+export async function restoreIdea(fd: FormData) {
+  const admin = await requireAdmin();
+  const id = ideaTarget(fd);
+  const r = await sql`UPDATE projects SET hidden_by_reports = false, updated_at = now() WHERE id::text = ${id} RETURNING id`;
+  if (!r.length) done(fd, "Idea not found.");
+  // Dismiss open reports so the 3-report auto-hide doesn't immediately re-trigger.
+  await sql`UPDATE reports SET status = 'dismissed', resolved_by = ${admin.id}, resolved_at = now()
+            WHERE target_type = 'idea' AND target_id = ${id} AND status = 'open'`;
+  await audit(admin.id, "unhide", "idea", id, note(fd) || undefined);
+  revalidatePath("/ideas");
+  done(fd);
+}
