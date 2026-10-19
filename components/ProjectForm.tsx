@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { CATEGORIES, type FormState, type ProjectInput } from "@/lib/projects";
 
 const input =
-  "w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white placeholder:text-gray-600 focus:border-green-400 focus:outline-none";
+  "w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white placeholder:text-gray-500 focus:border-green-400 focus:outline-none";
 
 export default function ProjectForm({
   action,

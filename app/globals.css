@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+/* PANA 2.0 uses a single dark theme for every visitor, regardless of the
+   device's light/dark preference. (The old prefers-color-scheme override
+   turned the page white for light-mode visitors while inputs stayed dark.) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -12,15 +16,47 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html,
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  /* Form fields: light text on dark fields, visible placeholders, readable options. */
+  input,
+  textarea,
+  select {
+    color: #ffffff;
+    background-color: #000000;
+    caret-color: #4ade80;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7280; /* gray-500 */
+    opacity: 1;
+  }
+
+  select option {
+    color: #ffffff;
+    background-color: #0a0a0a;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0 1000px #000000 inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    background-color: transparent;
+  }
 }

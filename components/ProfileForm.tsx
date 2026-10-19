@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { LIMITS, LINK_KINDS, LOOKING_FOR, ROLES, type ProfileFormState } from "@/lib/profile-input";
 
-const input = "w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white placeholder:text-gray-600 focus:border-green-400 focus:outline-none";
+const input = "w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white placeholder:text-gray-500 focus:border-green-400 focus:outline-none";
 
 export type ProfileFormInitial = {
   display_name?: string; headline?: string | null; experience?: string | null;
