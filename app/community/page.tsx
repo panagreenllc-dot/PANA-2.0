@@ -37,12 +37,16 @@ export default function CommunityPage() {
 
       <section className="mx-auto grid max-w-6xl gap-6 px-6 pb-24 md:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-green-500/10 to-transparent p-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Coming soon</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Members only</p>
           <h2 className="mb-2 text-2xl font-semibold">Member profiles</h2>
-          <p className="text-gray-400">
-            Soon you&apos;ll be able to share your skills, interests and what you&apos;re looking for, and find
-            collaborators. Profiles will be visible to signed-in members only.
+          <p className="mb-6 text-gray-400">
+            Share your skills, interests and what you&apos;re looking for, and find collaborators. Profiles are private
+            until you publish them, and visible to signed-in members only.
           </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link href="/members" className={btnPrimary}>Browse members</Link>
+            <Link href="/me/profile" className={btnSecondary}>Create your profile</Link>
+          </div>
         </div>
         <div className="rounded-2xl border border-white/10 p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Membership</p>

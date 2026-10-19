@@ -7,7 +7,7 @@
     "build": "node db/migrate.mjs --preview-build && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/*.test.ts && node --test db/*.test.mjs",
+    "test": "tsx --test lib/*.test.ts && tsx --test db/*.test.mjs",
     "db:migrate": "node db/migrate.mjs",
     "db:migrate:dry": "node db/migrate.mjs --dry-run"
   },

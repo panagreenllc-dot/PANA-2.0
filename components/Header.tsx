@@ -11,7 +11,8 @@ async function pendingCount(): Promise<number | null> {
   // Only ever called after the admin check below; re-check defensively.
   if (!(await getAdmin().catch(() => null))) return null;
   try {
-    const rows = await sql`SELECT count(*)::int AS n FROM projects WHERE status = 'pending'`;
+    const rows = await sql`SELECT (SELECT count(*) FROM projects WHERE status = 'pending') + (SELECT count(*) FROM reports WHERE status = 'open') AS n`;
+    rows[0].n = Number(rows[0]?.n ?? 0);
     return rows[0]?.n ?? 0;
   } catch {
     return null;

@@ -6,17 +6,8 @@ import { redirect } from "next/navigation";
 import sql, { type Row } from "@/lib/db";
 import { parseProjectId } from "@/lib/ids";
 import { requireAdmin } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { parseProject, type FormState } from "@/lib/projects";
-
-/** Best-effort audit trail; never blocks the admin action. */
-async function audit(adminId: string, action: string, targetType: string, targetId: string, note?: string) {
-  try {
-    await sql`INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, note)
-              VALUES (${adminId}, ${action}, ${targetType}, ${targetId}, ${note ?? null})`;
-  } catch (e) {
-    console.error("audit log write failed", e);
-  }
-}
 
 function refresh() {
   revalidatePath("/", "layout");

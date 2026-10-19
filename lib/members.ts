@@ -48,3 +48,10 @@ export async function requireMember(next: string): Promise<Viewer & { userId: st
   if (v.status === "banned" || !v.user) redirect("/?error=account");
   return v as Viewer & { userId: string; user: User };
 }
+
+/** Viewer context for the visibility gatekeeper (lib/visibility.ts). */
+export async function getViewerCtx(): Promise<Viewer & { ctx: import("@/lib/visibility").ViewerCtx }> {
+  const v = await getViewer();
+  const { isAdminUser } = await import("@/lib/auth");
+  return { ...v, ctx: { userId: v.userId, status: v.status, isAdmin: isAdminUser(v.user) } };
+}

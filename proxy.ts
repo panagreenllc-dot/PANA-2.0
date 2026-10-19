@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isMemberArea = createRouteMatcher(["/members(.*)", "/me(.*)", "/welcome(.*)"]);
 
 // Defense in depth: signed-out requests to /admin* never reach rendering.
 // Signed-in users are checked for the admin role in every admin page,
@@ -16,6 +17,13 @@ export default clerkMiddleware(async (auth, req) => {
         headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
       });
     }
+  }
+  if (isMemberArea(req)) {
+    // Member pages are never indexed (pages also set robots metadata and enforce the gate server-side).
+    const res = NextResponse.next();
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    res.headers.set("Cache-Control", "private, no-store");
+    return res;
   }
 });
 
