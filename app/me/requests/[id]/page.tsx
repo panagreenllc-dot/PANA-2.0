@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -40,8 +41,8 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
       </h1>
       <p className="mb-6 text-gray-400">
         {isOwner ? <>From {r.requester_profile_visible ? <Link href={`/members/${r.requester_user_id}`} className="text-green-400 underline">{r.requester_name}</Link> : r.requester_name}</> : <>To {r.owner_name}</>}
-        {" · "}{new Date(r.created_at).toLocaleDateString()}
-        {r.status === "pending" && <> · expires {expires.toLocaleDateString()}</>}
+        {" · "}{formatDate(r.created_at)}
+        {r.status === "pending" && <> · expires {formatDate(expires)}</>}
       </p>
       <blockquote className="mb-8 whitespace-pre-line rounded-2xl border border-white/10 p-6 text-gray-200">{r.message}</blockquote>
 
@@ -59,7 +60,7 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
       )}
       {r.status === "accepted" && (
         r.intro_sent_at
-          ? <p className="text-green-300">Introduction email sent {new Date(r.intro_sent_at).toLocaleString()}. Check your inbox.</p>
+          ? <p className="text-green-300">Introduction email sent {formatDateTime(r.intro_sent_at)}. Check your inbox.</p>
           : <div className="space-y-3"><p className="text-yellow-200">The introduction email hasn&apos;t been delivered yet.</p>
               {isOwner && <form action={retryIntroAction}><input type="hidden" name="id" value={r.id} /><button className="rounded-lg border border-white/20 px-4 py-2 text-sm">Retry introduction email</button></form>}</div>
       )}

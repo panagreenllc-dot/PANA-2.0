@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { clerkClient } from "@clerk/nextjs/server";
 import Link from "next/link";
 import sql from "@/lib/db";
@@ -60,7 +61,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
                     <p className="font-medium">{[u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "—"}</p>
                     <p className="text-gray-400">{email}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-gray-400">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3">{countOf.get(u.id) ?? 0}</td>
                   <td className="px-4 py-3 space-x-1">
                     {admin && <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-300">admin</span>}

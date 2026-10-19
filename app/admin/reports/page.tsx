@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import sql from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -32,7 +33,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <li key={r.id} className="rounded-2xl border border-white/10 p-5">
               <div className="flex flex-col justify-between gap-4 sm:flex-row">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-gray-500">{r.target_type} · {new Date(r.created_at).toLocaleString()} · {r.open_count} open</p>
+                  <p className="text-xs uppercase tracking-wider text-gray-500">{r.target_type} · {formatDateTime(r.created_at)} · {r.open_count} open</p>
                   <p className="mt-1 font-semibold">
                     {r.target_type === "profile" ? (
                       <Link href={`/members/${r.target_id}`} className="underline">{r.display_name ?? r.target_id}</Link>
