@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
-import { TERMS_VERSION } from "@/lib/gate";
 
-export const metadata: Metadata = { title: "Privacy Policy (draft)", robots: { index: false } };
+export const metadata: Metadata = { title: "Privacy Policy" };
 
 export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      version={TERMS_VERSION}
+      lastUpdated="October 19, 2026"
       sections={[
         { heading: "What we collect", body: (
           <ul className="list-disc space-y-1 pl-6">
