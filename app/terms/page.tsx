@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
-import { TERMS_VERSION } from "@/lib/gate";
 
-export const metadata: Metadata = { title: "Terms of Use (draft)", robots: { index: false } };
+export const metadata: Metadata = { title: "Terms of Use" };
 
 export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Use"
-      version={TERMS_VERSION}
+      lastUpdated="October 19, 2026"
       sections={[
         { heading: "Who can join", body: <p>You must be at least 18 years old to create an account or take part in the PANA 2.0 member community. By joining you confirm that you are 18 or older. We remove accounts of people under 18 when we learn of them.</p> },
         { heading: "Your content", body: <p>You keep ownership of the ideas, projects and profile information you post. You give PANA 2.0 permission to store and display that content according to the visibility settings you choose. Only post content you have the right to share.</p> },
