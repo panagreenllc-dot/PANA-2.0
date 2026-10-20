@@ -47,3 +47,4 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 |---|------|-----------------------|----|-------|
 | 001 | 001_moderation.sql | before 2026-10-18 | owner (Neon SQL Editor) | status/user_id/review columns |
 | 002–005 | members/audit, profiles/reports, ideas v2, collaboration | 2026-10-19 16:40 EDT | runner `--allow-production` (owner approved in writing) | Phase 2 PR 1. Backup taken first (logical JSON dump, LSN 0/6524B60) |
+| 008 | 008_domino_phase1.sql | **not applied** (Preview branches only) | — | PANA Domino Royale Phase 1 tables (`domino_*`). Needs John's OK before production. |
