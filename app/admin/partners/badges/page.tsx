@@ -27,7 +27,7 @@ export default async function AdminBadgesPage({ searchParams }: { searchParams: 
             return (
               <li key={b.id} className="rounded-2xl border border-white/10 p-5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-semibold">{b.display_name || "PANA member"} <span className="text-sm font-normal text-gray-400">· {b.cohort_name}</span></p>
+                  <p className="font-semibold">{b.display_name || "(no display name)"} <span className="text-sm font-normal text-gray-400">· {b.cohort_name}</span></p>
                   <span className={`rounded-full px-2 py-0.5 text-xs ${valid ? "bg-green-500/15 text-green-300" : "bg-red-500/15 text-red-300"}`}>{valid ? "active" : b.revoked_at ? "revoked" : "not valid"}</span>
                 </div>
                 <p className="text-xs text-gray-500">

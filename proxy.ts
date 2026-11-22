@@ -47,10 +47,11 @@ export default clerkMiddleware(async (auth, req) => {
 });
 
 export const config = {
-  // Everything except Next's own assets and real static files (by extension), so dot-paths like /.git/HEAD reach the
-  // 404 above instead of rendering pages without Clerk (which logged "clerkMiddleware() not detected").
+  // Everything except Next's own assets and real static files (by extension). Any path with a dot-segment
+  // (/.git/config, /.env, /.well-known/x.txt) always runs the proxy, so it gets the clean 404 above (or a normal page)
+  // instead of rendering without Clerk (which logged "clerkMiddleware() not detected"). See lib/proxy-matcher.test.ts.
   matcher: [
-    "/((?!_next/static|_next/image|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|txt|xml|map)).*)",
+    "/((?!_next/static|_next/image|(?!\\.)(?![^?]*/\\.)[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|txt|xml|map)).*)",
     "/",
     "/(api|trpc)(.*)",
   ],
