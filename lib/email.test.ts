@@ -54,18 +54,3 @@ test("P3-2b notices share no addresses; only the introduction does", async () =>
   const nr = E.needReviewEmail({ to: "o@x.org", needTitle: "A mentor", ideaName: "Idea", ideaId: "abc", outcome: "changes_requested", note: "Be specific" });
   assert.ok(nr.text.includes("Be specific") && nr.text.includes("/ideas/abc#needs"));
 });
-
-test("P3-2b: notices carry no addresses; only the introduction shares both", async () => {
-  const E = await import("./email");
-  const notice = E.helpOfferNoticeEmail({ to: ["owner@x.org"], ideaName: "App", needTitle: "Designer", helperName: "Sam", onBehalfOf: "IRSC", message: "I can help.", url: "https://panagreen.org/me/requests/help/1" });
-  assert.ok(!notice.text.includes("@") && notice.text.includes("for IRSC"));
-  const req = E.offerRequestNoticeEmail({ to: ["c@x.org"], offerTitle: "Lab", partnerName: "Library", requesterName: "Sam", message: "Two evenings please.", url: "u" });
-  assert.ok(!req.text.includes("@"));
-  const admin = E.offerRequestNoticeEmail({ to: ["a@x.org"], offerTitle: "Lab", partnerName: "Library", requesterName: "Sam", message: "secret note", url: "u", forAdmin: true });
-  assert.ok(!admin.text.includes("Sam") && !admin.text.includes("secret note"), "admin notice is link-only");
-  const intro = E.requestIntroEmail({ a: { email: "a@x.org", name: "A" }, b: { email: "b@x.org", name: "B" }, subject: "s", opening: "o", message: "m", url: "u" });
-  assert.deepEqual(intro.to, ["a@x.org", "b@x.org"]);
-  assert.ok(intro.text.includes("a@x.org") && intro.text.includes("b@x.org"));
-  const ap = E.adminPartnerUpdateEmail({ to: "a@x.org", what: "offer" });
-  assert.ok(!ap.text.includes("@"));
-});

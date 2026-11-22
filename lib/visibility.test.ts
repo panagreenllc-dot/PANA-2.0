@@ -115,28 +115,3 @@ test("needs are never more visible than their idea", async () => {
   const adminGated = { ...admin, status: "ok" as const };
   assert.ok(!needIsOpenFor(adminGated, { ...idea, hidden_by_reports: true }, need), "admins can't offer on hidden ideas");
 });
-
-test("needs are never more visible than their idea", async () => {
-  const { toNeedView, needIsOpenFor } = await import("./visibility");
-  const idea = { user_id: "user_o", status: "approved", audience: "public", hidden_by_reports: false } as const;
-  const need = { id: "n1", project_id: "p1", owner_user_id: "user_o", kind: "skills", title: "Designer", details: null, amount_text: null, status: "open", moderation_note: "internal" };
-  assert.ok(toNeedView(anon, idea, need));
-  assert.equal(toNeedView(anon, idea, need)?.moderation_note, undefined, "moderation notes only for owner/admin");
-  assert.equal(toNeedView(owner, idea, need)?.moderation_note, "internal");
-  assert.equal(toNeedView(anon, { ...idea, audience: "members" }, need), null);
-  assert.ok(toNeedView(member, { ...idea, audience: "members" }, need));
-  for (const i of [{ ...idea, status: "pending" }, { ...idea, hidden_by_reports: true }]) {
-    assert.equal(toNeedView(member, i, need), null);
-    assert.ok(toNeedView(owner, i, need), "owner still sees it");
-    assert.ok(toNeedView(admin, i, need), "admin still sees it");
-  }
-  for (const status of ["pending", "changes_requested", "closed"]) assert.equal(toNeedView(member, idea, { ...need, status }), null);
-  assert.ok(toNeedView(member, idea, { ...need, status: "met" }));
-  assert.equal(toNeedView(owner, idea, { ...need, owner_user_id: "someone_else" }), null, "a need belongs to the idea's owner");
-  assert.ok(needIsOpenFor(member, idea, need));
-  assert.ok(!needIsOpenFor(owner, idea, need), "not your own");
-  assert.ok(!needIsOpenFor(anon, idea, need));
-  assert.ok(!needIsOpenFor(member, idea, { ...need, status: "met" }));
-  const adminGated = { ...admin, status: "ok" as const };
-  assert.ok(!needIsOpenFor(adminGated, { ...idea, hidden_by_reports: true }, need), "admins can't offer on hidden ideas");
-});
