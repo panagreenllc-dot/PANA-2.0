@@ -19,7 +19,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Pro
   const lists = await Promise.all(REQUEST_KINDS.map((k) => R.listForUser(k, userId)));
   const counts = Object.fromEntries(REQUEST_KINDS.map((k, i) => [k, lists[i].received.filter((r) => r.status === "pending").length]));
   const { received, sent } = lists[REQUEST_KINDS.indexOf(kind)];
-  const title = (r: R.RequestRow) => kind === "help" ? `"${r.context}" on ${r.subject_title}` : kind === "offer" ? `${r.subject_title} · ${r.context}` : r.subject_title;
+  const title = (r: R.RequestRow) => kind === "help" ? `"${r.context}" on ${r.subject_title}` : r.subject_title;
   const sections = [
     { h: kind === "help" ? "Offers of help on my needs" : kind === "offer" ? "Requests to my organization" : "Received", rows: received, who: (r: R.RequestRow) => r.requester_name },
     { h: kind === "help" ? "Help I offered" : kind === "offer" ? "Offers I requested" : "Sent", rows: sent, who: (r: R.RequestRow) => kind === "offer" ? r.context ?? "" : r.responder_name ?? "" },

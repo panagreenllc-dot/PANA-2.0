@@ -41,7 +41,7 @@ export default async function OfferRequestPage({ params }: { params: Promise<{ i
       ) : isContact ? (
         <p className="text-gray-400">You&apos;re a contact for {o.partner_name}. Requests for this offer appear in your <Link href="/partner" className="text-green-400 underline">partner portal</Link>.</p>
       ) : open ? (
-        <p className="text-gray-300">You already have an open request for this offer. Track it in <Link href="/me/requests?tab=offer" className="text-green-400 underline">My requests</Link>.</p>
+        <p className="text-gray-300">Your request is sent and waiting for a reply. Track it in <Link href="/me/requests?tab=offer" className="text-green-400 underline">My requests</Link>.</p>
       ) : (
         <>
           <p className="mb-4 text-sm text-gray-400">Your email isn&apos;t shared. {o.partner_name} (or the PANA team) reviews your request; if it&apos;s accepted, PANA introduces you both by email. PANA doesn&apos;t give money or equipment; partners provide access directly.</p>

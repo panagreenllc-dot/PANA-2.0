@@ -129,7 +129,7 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
                     <span className={`rounded-full px-2 py-0.5 text-xs ${n.status === "open" ? "bg-green-500/15 text-green-300" : n.status === "pending" || n.status === "changes_requested" ? "bg-yellow-500/15 text-yellow-200" : "bg-white/10 text-gray-300"}`}>{NEED_STATUS_LABEL[n.status] ?? n.status}</span>
                   </div>
                   {n.details && <p className="mt-2 whitespace-pre-line text-sm text-gray-300">{n.details}</p>}
-                  {view!.moderation_note && (isOwner || ctx.isAdmin) && <p className="mt-2 text-sm text-yellow-200">Note from the PANA team: {view!.moderation_note}</p>}
+                  {view!.moderation_note && n.status === "changes_requested" && (isOwner || ctx.isAdmin) && <p className="mt-2 text-sm text-yellow-200">Note from the PANA team: {view!.moderation_note}</p>}
                   {isOwner && (
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
                       {n.status === "open" && <form action={needStatusAction}><input type="hidden" name="id" value={n.id} /><input type="hidden" name="to" value="met" /><button className="rounded-lg border border-green-500/40 px-3 py-1.5 text-green-300 hover:bg-green-500/10">Mark as met</button></form>}
