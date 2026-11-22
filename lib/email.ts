@@ -119,7 +119,7 @@ export function applicationReceivedEmail(p: { to: string; name: string; cohortNa
   };
 }
 
-export function applicationDecisionEmail(p: { to: string; name: string; cohortName: string; decision: "accepted" | "waitlisted" | "declined"; note: string | null; startsText?: string }): EmailMessage {
+export function applicationDecisionEmail(p: { to: string; name: string; cohortName: string; decision: "accepted" | "waitlisted" | "declined"; note: string | null; startsText?: string; badge?: boolean }): EmailMessage {
   const subject = {
     accepted: `You're in: welcome to ${p.cohortName}`,
     waitlisted: `You're on the waitlist for ${p.cohortName}`,
@@ -133,7 +133,7 @@ export function applicationDecisionEmail(p: { to: string; name: string; cohortNa
   return {
     to: [p.to],
     subject,
-    text: `Hi ${p.name},\n\n${body}${p.note ? `\n\nA note from the PANA team:\n"${p.note}"` : ""}\n\nYour application: ${SITE_URL}/me${FOOTER}`,
+    text: `Hi ${p.name},\n\n${body}${p.note ? `\n\nA note from the PANA team:\n"${p.note}"` : ""}${p.decision === "accepted" && p.badge ? `\n\nYour PANA incubator badge is ready. Show it at partner locations (with a photo ID) to use participant-only access like lab or library time: ${SITE_URL}/me/badge\nPartner offers you can use: ${SITE_URL}/incubator/resources` : ""}\n\nYour application: ${SITE_URL}/me${FOOTER}`,
   };
 }
 
@@ -161,5 +161,25 @@ export function cohortOpenEmail(p: { to: string; cohortName: string; closesText:
     to: [p.to],
     subject: `Applications are open: ${p.cohortName}`,
     text: `You asked us to tell you when PANA incubator applications open.\n\n${p.cohortName} is now accepting applications${p.closesText ? ` until ${p.closesText}` : ""}.\n\nApply here: ${SITE_URL}/incubator\n\nYou won't get this email again for this cohort. To stop incubator news, turn it off at ${SITE_URL}/me${FOOTER}`,
+  };
+}
+
+// ---- Phase 3 / P3-2a: partner inquiries ----
+
+/** Confirmation to whoever filled the public partner form (their own address only). */
+export function inquiryThanksEmail(p: { to: string; name: string; orgName: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: "Thanks for your interest in partnering with PANA",
+    text: `Hi ${p.name},\n\nThanks for reaching out about ${p.orgName} supporting PANA projects. John from PANA will be in touch.\n\nPANA connects local builders with community partners. Partners provide access directly, such as lab or library time, mentorship, software credits or space. PANA itself doesn't handle money.\n\nIf you didn't send this, you can ignore this email.\n\nPANA 2.0 · Where Community Meets Innovation`,
+  };
+}
+
+/** Link-only notice to the admin inbox: no organization or contact details. */
+export function adminNewInquiryEmail(p: { to: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: "New PANA partner inquiry",
+    text: `Someone filled in the "Become a partner" form.\n\nSee it in admin (sign in required): ${SITE_URL}/admin/partners\n\nThis notice has no contact details by design.`,
   };
 }

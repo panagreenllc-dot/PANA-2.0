@@ -1,3 +1,4 @@
+import { partnerTodo } from "@/lib/partners-repo";
 import Link from "next/link";
 import { Show, UserButton } from "@clerk/nextjs";
 import { getAdmin } from "@/lib/auth";
@@ -13,8 +14,10 @@ async function pendingCount(): Promise<number | null> {
   try {
     const rows = await sql`SELECT (SELECT count(*) FROM projects WHERE status = 'pending') + (SELECT count(*) FROM reports WHERE status = 'open')
       + coalesce((SELECT count(*) FROM incubator_applications WHERE status = 'submitted'), 0) AS n`;
-    rows[0].n = Number(rows[0]?.n ?? 0);
-    return rows[0]?.n ?? 0;
+    const base = Number(rows[0]?.n ?? 0);
+    // Partner to-dos counted separately so a missing table never hides the rest.
+    const partners = await partnerTodo().catch(() => 0);
+    return base + partners;
   } catch {
     return null;
   }

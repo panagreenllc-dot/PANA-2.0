@@ -11,6 +11,8 @@ export default function Footer() {
           <Link href="/submit" className="hover:text-white">Submit an Idea</Link>
           <Link href="/incubator" className="hover:text-white">Incubator</Link>
           <Link href="/community" className="hover:text-white">Community</Link>
+          <Link href="/partners" className="hover:text-white">Partners</Link>
+          <Link href="/support" className="hover:text-white">Become a partner</Link>
           <Link href="/techcon" className="hover:text-white">Tech Con</Link>
           <Link href="/about" className="hover:text-white">About</Link>
           <Link href="/terms" className="hover:text-white">Terms</Link>

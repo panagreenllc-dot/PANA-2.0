@@ -6,6 +6,7 @@ import ConfirmButton from "@/components/ConfirmButton";
 import { approveProject, deleteProject, rejectProject, requestChanges } from "./actions";
 import Link from "next/link";
 import { pendingApplications } from "@/lib/incubator-repo";
+import { partnerTodo } from "@/lib/partners-repo";
 
 export default async function PendingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   // Auth check must run here, not only in the layout: Next renders layout and page in parallel.
@@ -16,6 +17,7 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
     WHERE p.status = 'pending' ORDER BY p.created_at ASC`;
 
   const apps = await pendingApplications().catch(() => 0);
+  const partnerItems = await partnerTodo().catch(() => 0);
 
   return (
     <section>
@@ -23,6 +25,11 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
       {apps > 0 && (
         <p className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
           {apps} new incubator application{apps === 1 ? "" : "s"} waiting. <Link href="/admin/incubator" className="underline">Open the Incubator tab</Link>
+        </p>
+      )}
+      {partnerItems > 0 && (
+        <p className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          {partnerItems} partner item{partnerItems === 1 ? "" : "s"} waiting (inquiries, partners or offers). <Link href="/admin/partners" className="underline">Open the Partners tab</Link>
         </p>
       )}
       <h2 className="mb-4 text-xl font-semibold">Pending review ({projects.length})</h2>

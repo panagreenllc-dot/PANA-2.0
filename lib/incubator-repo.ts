@@ -4,6 +4,7 @@ import { formatDateTime, formatDay } from "@/lib/datetime";
 import {
   adminNewApplicationEmail, adminNotifyAddress, applicationDecisionEmail, applicationReceivedEmail, cohortOpenEmail, sendEmail,
 } from "@/lib/email";
+import { issueBadge, syncBadgeWithParticipant } from "@/lib/partners-repo";
 import type { ApplicationInput, CohortInput, Decision } from "@/lib/incubator";
 import {
   ACCEPTED_COUNT_SQL, ADMIN_COHORTS_SQL, ADMIN_NOTE_SQL, ADMIN_QUEUE_SQL, APPLY_INSERT_SQL, COHORT_ACCEPTING_SQL, COHORT_COLS,
@@ -72,16 +73,23 @@ export async function decideApplication(id: string, adminId: string, to: Decisio
   const rows = await q(DECIDE_SQL, [id, adminId, to, note, adminNote]);
   if (!rows.length) return { ok: false };
   if (to === "under_review") return { ok: true, status: to };
+  // Accepting makes the member an active participant: issue their access badge (P3-2a). Best effort.
+  let badge = false;
+  if (to === "accepted") badge = await issueBadge(id).catch((e) => { console.error("badge issue failed", e); return false; });
   const [p] = await q(DECISION_PARTIES_SQL, [id]);
   if (!p?.email || p.member_status !== "active" || !prefOn(p.email_prefs, "incubator")) return { ok: true, status: to, email: "skipped" };
   const res = await sendEmail(applicationDecisionEmail({
     to: p.email, name: p.name, cohortName: p.cohort_name, decision: to, note: p.decision_note,
-    startsText: p.starts_on ? formatDay(p.starts_on) : undefined,
+    startsText: p.starts_on ? formatDay(p.starts_on) : undefined, badge,
   }));
   return { ok: true, status: to, email: res.ok ? "sent" : (res as { skipped?: boolean }).skipped ? "skipped" : "failed" };
 }
 
-export const setParticipantStatus = async (id: string, s: string) => (await q(PARTICIPANT_SQL, [id, s])).length > 0;
+export async function setParticipantStatus(id: string, s: string): Promise<boolean> {
+  const ok = (await q(PARTICIPANT_SQL, [id, s])).length > 0;
+  if (ok) await syncBadgeWithParticipant(id, s).catch((e) => console.error("badge sync failed", e));
+  return ok;
+}
 export const saveAdminNote = async (id: string, note: string | null) => (await q(ADMIN_NOTE_SQL, [id, note])).length > 0;
 
 export async function createCohort(d: CohortInput, adminId: string): Promise<string> {

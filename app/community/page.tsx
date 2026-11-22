@@ -56,6 +56,17 @@ export default function CommunityPage() {
             builders, alongside entrepreneurs, mentors and professionals.
           </p>
         </div>
+        <div className="rounded-2xl border border-white/10 p-8 md:col-span-2">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Community partners</p>
+          <h2 className="mb-2 text-2xl font-semibold">Colleges, libraries and local businesses</h2>
+          <p className="mb-6 max-w-2xl text-gray-400">
+            Partners open their doors with lab hours, library time, meeting space and mentoring for incubator participants.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link href="/partners" className={btnSecondary}>Meet our partners</Link>
+            <Link href="/support" className={btnSecondary}>Become a partner</Link>
+          </div>
+        </div>
       </section>
     </main>
   );
