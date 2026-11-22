@@ -51,6 +51,7 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 | 007 | 007_blank_legacy_project_emails.sql | 2026-10-19 19:39 EDT (from `schema_migrations`) | runner `--allow-production` | Blanked legacy `projects.email` copies (0 rows at the time). |
 | 008 | domino_* tables (PANA Domino Royale Phase 1) | 2026-10-21 16:56 EDT | runner `runMigrations` over Neon WebSocket/HTTPS (port 5432 blocked from the box), owner approved in writing 2026-10-21 16:52 EDT | Backup first: `pana-prod-pre-008-20261021-205302.json` (LSN 0/6BFF9F8). Existing data verified identical afterwards. |
 | 009 | 009_incubator.sql (Phase 3 P3-1, PR #9) | 2026-11-22 12:20 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("merge it") | Backup first: `pana-prod-pre-009-20261122-172023.json` (logical JSON dump, LSN 0/DD49D60, taken 12:20 PM EST). Dry run showed only 009 pending. Existing tables, columns and data (incl. `domino_*`) verified identical afterwards. Additive: `incubator_cohorts`, `incubator_applications`. |
+| 010 | 010_partners_offers_badges.sql (Phase 3 P3-2a) | **not applied to production — waiting for owner approval** | (preview DB only, via `--preview-build`) | Additive: `partners`, `partner_inquiries`, `resource_offers`, `incubator_credentials`. Needs a backup first and the `BADGE_TOKEN_SECRET` env var (Sensitive, 32+ random chars) on Production before badges work. Rollback: drop the four tables (no other table is changed). |
 
 ## Preview seed (`db/seed-preview.mjs`)
 `npm run build` also runs `node db/seed-preview.mjs`, with the same guard as the runner: it only acts on a Vercel Preview
@@ -64,3 +65,9 @@ version (`2026-10-draft`) on every preview build, so the "We updated our Terms" 
 Note: a Neon preview branch starts as a copy of production data, so it contains real members' emails. Never add a shared
 test address (like `+clerk_test`) to a preview's `ADMIN_EMAILS` on a deployment that has a share link.
 
+
+## Badge secret (`BADGE_TOKEN_SECRET`)
+
+Badge QR codes are derived as HMAC-SHA256(`BADGE_TOKEN_SECRET`, nonce); the database stores only the nonce and a
+SHA-256 hash of the code, never the code itself. Set it per environment as a Sensitive env var (e.g. `openssl rand -base64 48`).
+Without it badges are simply switched off. Changing it invalidates every printed badge (members can open /me/badge for a new one).

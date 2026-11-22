@@ -78,6 +78,13 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
                     {APP_STATUS_LABEL[a.status] ?? a.status}{a.participant_status && a.participant_status !== "active" ? ` · ${a.participant_status}` : ""}
                   </span>
                 </div>
+                {a.status === "accepted" && a.participant_status === "active" && (
+                  <p className="text-sm">
+                    <Link href="/me/badge" className="text-green-400 underline hover:text-green-300">Show my access badge</Link>
+                    <span className="text-gray-600"> · </span>
+                    <Link href="/incubator/resources" className="text-green-400 underline hover:text-green-300">Partner resources</Link>
+                  </p>
+                )}
                 {a.decision_note && <p className="rounded-lg bg-white/5 p-3 text-sm text-gray-300">Note from PANA: {a.decision_note}</p>}
                 {(a.status === "submitted" || a.status === "under_review") && a.announce_note && (
                   <p className="text-xs text-gray-500">{a.announce_note}{a.announce_on ? ` (${formatDay(a.announce_on)})` : ""}.</p>

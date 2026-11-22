@@ -94,6 +94,13 @@ export default async function IncubatorPage({ searchParams }: { searchParams: Pr
           PANA is the platform that connects participants with mentors, community partners and sponsors. Partners
           provide resources directly. PANA itself doesn&apos;t give out money or equipment.
         </p>
+        <p className="mt-3 text-sm">
+          <Link href="/incubator/resources" className="text-green-400 hover:text-green-300">See partner resources</Link>
+          <span className="text-gray-600"> · </span>
+          <Link href="/partners" className="text-green-400 hover:text-green-300">Our partners</Link>
+          <span className="text-gray-600"> · </span>
+          <Link href="/support" className="text-green-400 hover:text-green-300">Become a partner</Link>
+        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-20">

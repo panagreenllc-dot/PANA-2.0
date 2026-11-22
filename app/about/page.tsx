@@ -45,6 +45,7 @@ export default function AboutPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/sign-up" className={btnPrimary}>Join now</Link>
             <Link href="/incubator" className={btnSecondary}>Discover the Incubator</Link>
+            <Link href="/support" className={btnSecondary}>Become a partner</Link>
           </div>
         </div>
       </section>

@@ -46,7 +46,7 @@ test("009 is additive: applies on top of 001-008 and leaves domino_* tables exac
   const before = [await shape(), await cons()];
   await runMigrations(d, loadMigrations(), { log: () => {} });
   assert.deepEqual([await shape(), await cons()], before);
-  const tables = (await d.query("SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'incubator_%' ORDER BY 1")).map((r) => r.table_name);
+  const tables = (await d.query("SELECT table_name FROM information_schema.tables WHERE table_name IN ('incubator_applications', 'incubator_cohorts') ORDER BY 1")).map((r) => r.table_name);
   assert.deepEqual(tables, ["incubator_applications", "incubator_cohorts"]);
   assert.deepEqual(await runMigrations(d, loadMigrations(), { log: () => {} }), [], "idempotent");
   await pg.close();
