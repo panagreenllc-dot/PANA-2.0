@@ -49,8 +49,13 @@ export async function withdrawRequestAction(fd: FormData) {
 
 export async function emailPrefsAction(fd: FormData) {
   const ctx = await gated();
-  const prefs = { requests: fd.get("requests") === "on", reviews: fd.get("reviews") === "on" };
-  await sql`UPDATE members SET email_prefs = ${JSON.stringify(prefs)}::jsonb, updated_at = now() WHERE user_id = ${ctx.userId}`;
+  const prefs = {
+    requests: fd.get("requests") === "on", reviews: fd.get("reviews") === "on",
+    incubator: fd.get("incubator") === "on", incubator_news: fd.get("incubator_news") === "on",
+  };
+  // Merge so keys added later (or by other features) are never wiped.
+  await sql`UPDATE members SET email_prefs = coalesce(email_prefs, '{}'::jsonb) || ${JSON.stringify(prefs)}::jsonb, updated_at = now()
+            WHERE user_id = ${ctx.userId}`;
   revalidatePath("/me");
   redirect("/me?saved=prefs");
 }

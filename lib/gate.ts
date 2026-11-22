@@ -2,7 +2,11 @@
 // D3/D4: members must confirm they are 18+ and accept the Terms before they can
 // submit ideas, create a profile, view members or send collaboration requests.
 
-export const TERMS_VERSION = "2026-10-draft";
+// Current Terms/Privacy version. Members who accepted an older version keep using everything they could before;
+// they're asked to accept this version the first time they use a Phase 3 feature (see termsCurrent / requireMember).
+export const TERMS_VERSION = "2026-12";
+/** Shown on /terms, /privacy and in the update banner. */
+export const TERMS_UPDATED_ON = "December 2026";
 
 export type MemberRecord = {
   age_attested_at: Date | string | null;
@@ -19,6 +23,22 @@ export function gateStatus(input: { userId: string | null; banned?: boolean; mem
   const m = input.member;
   if (!m || !m.age_attested_at || !m.terms_accepted_at || !m.terms_version) return "needs_welcome";
   return "ok";
+}
+
+/** True when the member accepted the CURRENT Terms version (compares the version, not just "accepted something"). */
+export function termsCurrent(member: MemberRecord, current = TERMS_VERSION): boolean {
+  return !!member && !!member.terms_accepted_at && member.terms_version === current;
+}
+
+/** A gated member who accepted an older Terms version: show the banner, and re-ask before Phase 3 features. */
+export function needsTermsUpdate(status: GateStatus, member: MemberRecord, current = TERMS_VERSION): boolean {
+  return status === "ok" && !termsCurrent(member, current);
+}
+
+/** Re-acceptance of updated Terms (age was already confirmed at sign-up). */
+export function parseTermsUpdate(formData: FormData): { ok: true } | { ok: false; error: string } {
+  if (formData.get("acceptTerms") !== "on") return { ok: false, error: "Please agree to the updated Terms of Use and Privacy Policy to continue." };
+  return { ok: true };
 }
 
 /** Only allow same-site relative paths as post-welcome / post-sign-in destinations. */

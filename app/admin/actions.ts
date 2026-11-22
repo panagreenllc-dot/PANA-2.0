@@ -8,7 +8,7 @@ import { parseProjectId } from "@/lib/ids";
 import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { parseIdea, type IdeaFormState } from "@/lib/ideas";
-import { updateIdeaByAdmin } from "@/lib/ideas-repo";
+import { notifyReviewResult, updateIdeaByAdmin } from "@/lib/ideas-repo";
 
 function refresh() {
   revalidatePath("/", "layout");
@@ -51,6 +51,7 @@ export async function approveProject(formData: FormData) {
     UPDATE projects SET status = 'approved', moderation_note = NULL, reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
     WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
   await audit(admin.id, "approve", "idea", id);
+  await notifyReviewResult(id, "approved", null);
 }
 
 export async function unpublishProject(formData: FormData) {
@@ -97,6 +98,7 @@ async function setReviewStatus(formData: FormData, status: "changes_requested" |
     UPDATE projects SET status = ${status}, moderation_note = ${note}, reviewed_at = now(), reviewed_by = ${admin.id}, updated_at = now()
     WHERE id::text = ${id} RETURNING id`, "Project not found (it may already have been removed).");
   await audit(admin.id, status === "rejected" ? "reject" : "request_changes", "idea", id, note ?? undefined);
+  await notifyReviewResult(id, status, note);
 }
 
 export async function requestChanges(formData: FormData) {

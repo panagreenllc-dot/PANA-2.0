@@ -1,7 +1,7 @@
 import { auth, currentUser, type User } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import sql, { type Row } from "@/lib/db";
-import { gateStatus, type GateStatus, type MemberRecord } from "@/lib/gate";
+import { gateStatus, termsCurrent, type GateStatus, type MemberRecord } from "@/lib/gate";
 import { memberFieldsFromClerk, type ClerkUserLike } from "@/lib/clerk-sync";
 
 export type { ClerkUserLike };
@@ -25,27 +25,36 @@ export async function getMemberRecord(userId: string): Promise<Row | null> {
   return rows[0] ?? null;
 }
 
-export type Viewer = { userId: string | null; user: User | null; status: GateStatus };
+export type Viewer = {
+  userId: string | null; user: User | null; status: GateStatus;
+  /** Accepted the CURRENT Terms version (Phase 3 features require it). */
+  termsCurrent: boolean;
+};
 
 /** Who is looking? Also performs the fallback Clerk → DB sync if the webhook hasn't run yet. */
 export async function getViewer(): Promise<Viewer> {
   const { userId } = await auth();
-  if (!userId) return { userId: null, user: null, status: "anon" };
+  if (!userId) return { userId: null, user: null, status: "anon", termsCurrent: false };
   const user = await currentUser();
   let member = await getMemberRecord(userId);
   if (!member && user) {
     await upsertMember(user as unknown as ClerkUserLike);
     member = await getMemberRecord(userId);
   }
-  return { userId, user, status: gateStatus({ userId, banned: user?.banned, member: member as MemberRecord }) };
+  return {
+    userId, user, status: gateStatus({ userId, banned: user?.banned, member: member as MemberRecord }),
+    termsCurrent: termsCurrent(member as MemberRecord),
+  };
 }
 
 /** For member-only pages and server actions. Redirects anyone who hasn't completed the gate. */
-export async function requireMember(next: string): Promise<Viewer & { userId: string; user: User }> {
+export async function requireMember(next: string, opts: { currentTerms?: boolean } = {}): Promise<Viewer & { userId: string; user: User }> {
   const v = await getViewer();
   if (v.status === "anon") redirect(`/sign-in?redirect_url=${encodeURIComponent(next)}`);
   if (v.status === "needs_welcome") redirect(`/welcome?next=${encodeURIComponent(next)}`);
   if (v.status === "banned" || !v.user) redirect("/?error=account");
+  // Phase 3 features: members who accepted an older Terms version re-accept once, then continue.
+  if (opts.currentTerms && !v.termsCurrent) redirect(`/welcome?next=${encodeURIComponent(next)}`);
   return v as Viewer & { userId: string; user: User };
 }
 

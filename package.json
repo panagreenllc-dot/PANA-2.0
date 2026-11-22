@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node db/migrate.mjs --preview-build && next build",
+    "build": "node db/migrate.mjs --preview-build && node db/seed-preview.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test lib/*.test.ts && tsx --test db/*.test.mjs",

@@ -4,6 +4,8 @@ import AdminProjectRow from "@/components/AdminProjectRow";
 import AdminNotice from "@/components/AdminNotice";
 import ConfirmButton from "@/components/ConfirmButton";
 import { approveProject, deleteProject, rejectProject, requestChanges } from "./actions";
+import Link from "next/link";
+import { pendingApplications } from "@/lib/incubator-repo";
 
 export default async function PendingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   // Auth check must run here, not only in the layout: Next renders layout and page in parallel.
@@ -13,9 +15,16 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
     SELECT p.*, COALESCE(p.email, m.email) AS email FROM projects p LEFT JOIN members m ON m.user_id = p.user_id
     WHERE p.status = 'pending' ORDER BY p.created_at ASC`;
 
+  const apps = await pendingApplications().catch(() => 0);
+
   return (
     <section>
       <AdminNotice error={error} />
+      {apps > 0 && (
+        <p className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          {apps} new incubator application{apps === 1 ? "" : "s"} waiting. <Link href="/admin/incubator" className="underline">Open the Incubator tab</Link>
+        </p>
+      )}
       <h2 className="mb-4 text-xl font-semibold">Pending review ({projects.length})</h2>
       {projects.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-white/15 p-8 text-gray-400">Nothing waiting for review.</p>

@@ -19,8 +19,8 @@ const add = (d, amount, reason, key) =>
 
 test("008 applies on top of 001-007 and seeds badges and challenges", async () => {
   const { pg, d } = await db();
-  const v = (await d.query("SELECT max(version)::int v FROM schema_migrations"))[0].v;
-  assert.equal(v, 8);
+  // 008 is applied (later migrations, e.g. 009, may follow it).
+  assert.equal((await d.query("SELECT count(*)::int n FROM schema_migrations WHERE version = '008'"))[0].n, 1);
   assert.ok((await d.query("SELECT count(*)::int n FROM domino_badges"))[0].n >= 10);
   const active = (await d.query("SELECT code FROM domino_challenges WHERE active ORDER BY sort")).map((r) => r.code);
   assert.deepEqual(active, ["claim_daily", "streak_3"]);

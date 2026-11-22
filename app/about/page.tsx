@@ -24,7 +24,7 @@ export default function AboutPage() {
         </p>
         <p>
           We&apos;re starting on Florida&apos;s Treasure Coast, with an online community open to everyone. Our virtual
-          incubator offers guidance, mentorship, financial assistance and tools, and our flagship event,{" "}
+          incubator offers guidance, mentorship, and access to resources through community partners, and our flagship event,{" "}
           <Link href="/techcon" className="text-green-400 hover:text-green-300">Treasure Coast Tech Con</Link>, brings
           the community together in person.
         </p>
