@@ -61,11 +61,17 @@ export async function cohortStatusAction(fd: FormData) {
   redirect(back(id, { notice: `status-${status}` }));
 }
 
-export async function decideAction(fd: FormData) {
+// One action per button (formAction), like app/admin/page.tsx: React does not send the
+// clicked button's name/value with a server-action form, so a shared name="decision" arrives empty.
+export async function acceptApplicationAction(fd: FormData) { await decide(fd, "accepted"); }
+export async function waitlistApplicationAction(fd: FormData) { await decide(fd, "waitlisted"); }
+export async function declineApplicationAction(fd: FormData) { await decide(fd, "declined"); }
+export async function reviewApplicationAction(fd: FormData) { await decide(fd, "under_review"); }
+
+async function decide(fd: FormData, to: Decision) {
   const admin = await requireAdmin();
   const id = parseUuid(fd.get("id"));
   const cohortId = parseUuid(fd.get("cohort_id"));
-  const to = String(fd.get("decision") ?? "") as Decision;
   const note = String(fd.get("note") ?? "").trim().slice(0, 1000) || null;
   const adminNote = String(fd.get("admin_note") ?? "").trim().slice(0, 2000) || null;
   if (!id || !cohortId || !(DECISIONS as readonly string[]).includes(to)) redirect(back(cohortId, { error: "Invalid decision." }));

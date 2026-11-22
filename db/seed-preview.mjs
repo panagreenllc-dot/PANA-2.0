@@ -21,6 +21,23 @@ export const SEED_COHORTS = [{
   capacity: 10,
 }];
 
+// Preview-only test fixture for the Terms re-accept banner: these Clerk *dev* test addresses (fixed code 424242) are
+// reset to the pre-Phase-3 Terms version on every preview build, so a tester can sign in as one and see the banner.
+// Only "+clerk_test@example.com" addresses are allowed here; real members are never touched.
+export const STALE_TERMS_TEST_EMAILS = ["pana-terms+clerk_test@example.com"];
+export const STALE_TERMS_VERSION = "2026-10-draft";
+
+export async function resetStaleTermsFixtures(db, emails = STALE_TERMS_TEST_EMAILS) {
+  const safe = emails.filter((e) => /\+clerk_test@example\.com$/i.test(e));
+  if (!safe.length) return 0;
+  const rows = await db.query(
+    `UPDATE members SET terms_version = $2
+      WHERE lower(email) = ANY($1::text[]) AND age_attested_at IS NOT NULL AND terms_version IS DISTINCT FROM $2
+      RETURNING 1`,
+    [safe.map((e) => e.toLowerCase()), STALE_TERMS_VERSION]);
+  return rows.length;
+}
+
 /** db: { query(text, params) => rows } */
 export async function seedPreview(db, cohorts = SEED_COHORTS) {
   const inserted = [];
@@ -47,6 +64,8 @@ async function main() {
   try {
     const done = await seedPreview({ query: async (t, p) => (await client.query(t, p)).rows });
     console.log(`[seed] preview seed ${done.length ? `inserted: ${done.join(", ")}` : "already present"}`);
+    const reset = await resetStaleTermsFixtures({ query: async (t, p) => (await client.query(t, p)).rows });
+    console.log(`[seed] stale-Terms test fixtures reset: ${reset}`);
   } finally {
     await client.end();
   }

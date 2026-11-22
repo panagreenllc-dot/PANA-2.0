@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { loadMigrations, runMigrations } from "./migrate.mjs";
-import { seedPreview, SEED_COHORTS } from "./seed-preview.mjs";
+import { resetStaleTermsFixtures, seedPreview, SEED_COHORTS } from "./seed-preview.mjs";
 import {
   ACCEPTED_COUNT_SQL, ADMIN_COHORTS_SQL, ADMIN_QUEUE_SQL, APPLY_INSERT_SQL, COHORT_ACCEPTING_SQL, DECIDE_SQL, MY_APPLICATIONS_SQL,
   NOTIFY_TARGETS_SQL, PARTICIPANT_SQL, PENDING_APPLICATIONS_SQL, PREFS_MERGE_SQL, PUBLIC_COHORTS_SQL, WITHDRAW_APPLICATION_SQL,
@@ -185,5 +185,19 @@ test("email prefs merge without wiping other keys; notify targets are opted-in a
   const [a] = await d.query("SELECT email_prefs FROM members WHERE user_id = 'alice'");
   assert.deepEqual(a.email_prefs, { requests: true, reviews: true, incubator_news: true });
   assert.deepEqual((await d.query(NOTIFY_TARGETS_SQL, [90])).map((r) => r.user_id), ["alice"]);
+  await pg.close();
+});
+
+test("preview stale-Terms fixture only touches +clerk_test@example.com members who finished onboarding", async () => {
+  const { pg, d } = await fixture();
+  const ins = "INSERT INTO members (user_id, email, age_attested_at, terms_version) VALUES ($1, $2, $3, '2026-12')";
+  await d.query(ins, ["t1", "Pana-Terms+clerk_test@example.com", new Date()]);
+  await d.query(ins, ["t2", "pana-terms+clerk_test@example.com.evil.org", new Date()]);
+  await d.query(ins, ["t3", "real.person@gmail.com", new Date()]);
+  const emails = ["pana-terms+clerk_test@example.com", "real.person@gmail.com"];
+  assert.equal(await resetStaleTermsFixtures(d, emails), 1, "real address filtered out before the query");
+  assert.equal(await resetStaleTermsFixtures(d, emails), 0, "idempotent");
+  const rows = await d.query("SELECT user_id, terms_version FROM members WHERE user_id IN ('t1','t2','t3') ORDER BY user_id");
+  assert.deepEqual(rows.map((r) => r.terms_version), ["2026-10-draft", "2026-12", "2026-12"]);
   await pg.close();
 });
