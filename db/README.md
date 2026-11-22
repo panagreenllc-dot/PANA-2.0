@@ -57,3 +57,10 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 build whose database is **not** production. It inserts "Cohort 1, Spring 2027" (by slug, never overwriting). Production is
 never seeded; John creates cohorts in **Admin → Incubator**.
 
+It also resets the Clerk **dev** test member `pana-terms+clerk_test@example.com` (code 424242) to the pre-Phase-3 Terms
+version (`2026-10-draft`) on every preview build, so the "We updated our Terms" banner can be tested. Only
+`+clerk_test@example.com` addresses are accepted by that step; real members are never touched.
+
+Note: a Neon preview branch starts as a copy of production data, so it contains real members' emails. Never add a shared
+test address (like `+clerk_test`) to a preview's `ADMIN_EMAILS` on a deployment that has a share link.
+
