@@ -18,16 +18,16 @@ test("missing RESEND_API_KEY skips without throwing", async () => {
 test("sends via Resend with from address and returns id; errors don't throw", async () => {
   let body: Record<string, unknown> = {};
   let auth = "";
-  const ok = await sendEmail(msg, { apiKey: "re_test", fetchImpl: (async (_u: string, init: RequestInit) => {
+  const ok = await sendEmail(msg, { apiKey: "re_test", allowReserved: true, fetchImpl: (async (_u: string, init: RequestInit) => {
     body = JSON.parse(String(init.body)); auth = String((init.headers as Record<string, string>).Authorization);
     return new Response(JSON.stringify({ id: "em_1" }), { status: 200 });
   }) as unknown as typeof fetch });
   assert.deepEqual(ok, { ok: true, id: "em_1" });
   assert.equal(body.from, DEFAULT_FROM);
   assert.equal(auth, "Bearer re_test");
-  const bad = await sendEmail(msg, { apiKey: "re_test", fetchImpl: (async () => new Response("nope", { status: 422 })) as typeof fetch });
+  const bad = await sendEmail(msg, { apiKey: "re_test", allowReserved: true, fetchImpl: (async () => new Response("nope", { status: 422 })) as typeof fetch });
   assert.equal(bad.ok, false);
-  const boom = await sendEmail(msg, { apiKey: "re_test", fetchImpl: (async () => { throw new Error("net"); }) as typeof fetch });
+  const boom = await sendEmail(msg, { apiKey: "re_test", allowReserved: true, fetchImpl: (async () => { throw new Error("net"); }) as typeof fetch });
   assert.equal(boom.ok, false);
 });
 

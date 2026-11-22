@@ -2,7 +2,29 @@
 // Requires RESEND_API_KEY and a verified sending domain (mail.panagreen.org) in Resend.
 
 export const DEFAULT_FROM = "PANA 2.0 <notify@mail.panagreen.org>";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://panagreen.org";
+import { CONTACT_EMAIL } from "@/lib/site";
+
+/** Links in emails. Preview deployments link to their own branch URL so testers don't land on production. */
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  || (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : "https://panagreen.org");
+
+/** Where admin notices go (link-only, no member content). Defaults to the PANA contact inbox. */
+export function adminNotifyAddress(): string {
+  const v = (process.env.ADMIN_NOTIFY_EMAIL || "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? v : CONTACT_EMAIL;
+}
+
+/** RFC 2606 / test domains (e.g. Clerk "+clerk_test@example.com" users): never sent, only logged. */
+export function isReservedAddress(addr: string): boolean {
+  const domain = addr.split("@").pop()?.toLowerCase() ?? "";
+  return /(^|\.)(example\.(com|net|org)|example|test|invalid|localhost)$/.test(domain);
+}
+
+/** "jo***@example.com", for logs. */
+export function maskEmail(addr: string): string {
+  const [u, d] = addr.split("@");
+  return d ? `${u.slice(0, 2)}***@${d}` : "***";
+}
 
 export type EmailMessage = { to: string[]; subject: string; text: string; html?: string; replyTo?: string[] };
 export type SendResult = { ok: true; id: string } | { ok: false; error: string; skipped?: boolean };
@@ -16,13 +38,19 @@ export function textToHtml(text: string): string {
     .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, "<br>")}</div>`;
 }
 
-export async function sendEmail(msg: EmailMessage, opts: { fetchImpl?: typeof fetch; apiKey?: string; from?: string } = {}): Promise<SendResult> {
+export async function sendEmail(msg: EmailMessage, opts: { fetchImpl?: typeof fetch; apiKey?: string; from?: string; allowReserved?: boolean } = {}): Promise<SendResult> {
+  const valid = msg.to.filter((t) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t));
+  const reserved = opts.allowReserved ? [] : valid.filter(isReservedAddress);
+  if (reserved.length && reserved.length === valid.length) {
+    console.info(`[email] test address, logged not sent: "${msg.subject}" to ${reserved.map(maskEmail).join(", ")}`);
+    return { ok: false, skipped: true, error: "test address (not sent)" };
+  }
   const apiKey = opts.apiKey ?? process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn(`[email] RESEND_API_KEY is not set; not sending "${msg.subject}"`);
     return { ok: false, skipped: true, error: "RESEND_API_KEY not set" };
   }
-  const recipients = msg.to.filter((t) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t));
+  const recipients = valid.filter((t) => !reserved.includes(t));
   if (recipients.length === 0) return { ok: false, error: "no valid recipients" };
   try {
     const res = await (opts.fetchImpl ?? fetch)("https://api.resend.com/emails", {
@@ -43,6 +71,7 @@ export async function sendEmail(msg: EmailMessage, opts: { fetchImpl?: typeof fe
       console.error(`[email] ${error}`);
       return { ok: false, error };
     }
+    console.info(`[email] sent "${msg.subject}" to ${recipients.map(maskEmail).join(", ")} (id ${body.id})`);
     return { ok: true, id: body.id };
   } catch (e) {
     const error = `network error: ${(e as Error).message}`.slice(0, 300);
@@ -75,5 +104,62 @@ export function declinedEmail(p: { requesterEmail: string; ideaName: string }): 
     to: [p.requesterEmail],
     subject: `Update on your request for "${p.ideaName}"`,
     text: `Thanks for offering to collaborate on "${p.ideaName}". The owner isn't taking this one forward right now.\n\nThere are plenty more ideas looking for help: ${SITE_URL}/ideas\n\nManage email preferences: ${SITE_URL}/me`,
+  };
+}
+
+// ---- Phase 3: incubator + idea review results (each goes only to the member it is about) ----
+
+const FOOTER = `\n\nManage email preferences: ${SITE_URL}/me\n\nPANA 2.0 · Where Community Meets Innovation`;
+
+export function applicationReceivedEmail(p: { to: string; name: string; cohortName: string; ideaName: string | null; announceText?: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: `We received your application to ${p.cohortName}`,
+    text: `Hi ${p.name},\n\nThanks for applying to the PANA incubator, ${p.cohortName}${p.ideaName ? `, with "${p.ideaName}"` : ""}.\n\nJohn and the PANA team review every application. ${p.announceText ?? "We'll email you when there's a decision."}\n\nYou can check the status or withdraw any time: ${SITE_URL}/me\n\nA reminder: PANA connects participants with mentors, community partners and sponsors. PANA itself doesn't give out money or equipment.${FOOTER}`,
+  };
+}
+
+export function applicationDecisionEmail(p: { to: string; name: string; cohortName: string; decision: "accepted" | "waitlisted" | "declined"; note: string | null; startsText?: string }): EmailMessage {
+  const subject = {
+    accepted: `You're in: welcome to ${p.cohortName}`,
+    waitlisted: `You're on the waitlist for ${p.cohortName}`,
+    declined: `Update on your ${p.cohortName} application`,
+  }[p.decision];
+  const body = {
+    accepted: `Congratulations! You've been accepted into ${p.cohortName}.${p.startsText ? ` The program starts ${p.startsText}.` : ""} We'll be in touch with next steps.`,
+    waitlisted: `Your application for ${p.cohortName} is on the waitlist. If a spot opens up, we'll let you know.`,
+    declined: `Thank you for applying to ${p.cohortName}. We aren't able to offer you a spot this time, but we'd love to see you keep building with the community and apply again.`,
+  }[p.decision];
+  return {
+    to: [p.to],
+    subject,
+    text: `Hi ${p.name},\n\n${body}${p.note ? `\n\nA note from the PANA team:\n"${p.note}"` : ""}\n\nYour application: ${SITE_URL}/me${FOOTER}`,
+  };
+}
+
+/** Link-only notice to the admin inbox: no applicant name, idea or answers. */
+export function adminNewApplicationEmail(p: { to: string; cohortId: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: "New PANA incubator application",
+    text: `A new incubator application is waiting for review.\n\nReview it in admin (sign in required): ${SITE_URL}/admin/incubator/${p.cohortId}\n\nThis notice has no applicant details by design.`,
+  };
+}
+
+export function ideaReviewEmail(p: { to: string; ideaName: string; ideaId: string; outcome: "approved" | "changes_requested" | "rejected"; note: string | null }): EmailMessage {
+  const line = {
+    approved: `Good news: your idea "${p.ideaName}" was approved and is now live on PANA 2.0.\n\nSee it here: ${SITE_URL}/ideas/${p.ideaId}`,
+    changes_requested: `Your idea "${p.ideaName}" needs a few changes before it can go live.\n\nEdit it here: ${SITE_URL}/ideas/${p.ideaId}/edit`,
+    rejected: `Thanks for sharing "${p.ideaName}". We weren't able to publish it this time.`,
+  }[p.outcome];
+  const subject = { approved: `Your idea is live: ${p.ideaName}`, changes_requested: `Changes requested: ${p.ideaName}`, rejected: `Update on your idea: ${p.ideaName}` }[p.outcome];
+  return { to: [p.to], subject, text: `${line}${p.note ? `\n\nNote from the reviewer:\n"${p.note}"` : ""}${FOOTER}` };
+}
+
+export function cohortOpenEmail(p: { to: string; cohortName: string; closesText: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: `Applications are open: ${p.cohortName}`,
+    text: `You asked us to tell you when PANA incubator applications open.\n\n${p.cohortName} is now accepting applications${p.closesText ? ` until ${p.closesText}` : ""}.\n\nApply here: ${SITE_URL}/incubator\n\nYou won't get this email again for this cohort. To stop incubator news, turn it off at ${SITE_URL}/me${FOOTER}`,
   };
 }

@@ -2,7 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isMemberArea = createRouteMatcher(["/members(.*)", "/me(.*)", "/welcome(.*)"]);
+const isMemberArea = createRouteMatcher(["/members(.*)", "/me(.*)", "/welcome(.*)", "/incubator/apply(.*)"]);
 
 // Defense in depth: signed-out requests to /admin* never reach rendering.
 // Signed-in users are checked for the admin role in every admin page,

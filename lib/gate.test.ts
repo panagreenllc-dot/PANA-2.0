@@ -1,7 +1,7 @@
 // Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gateStatus, parseWelcome, safeNext, TERMS_VERSION } from "./gate";
+import { gateStatus, needsTermsUpdate, parseTermsUpdate, parseWelcome, safeNext, termsCurrent, TERMS_VERSION } from "./gate";
 
 const done = { age_attested_at: new Date(), terms_accepted_at: new Date(), terms_version: TERMS_VERSION, status: "active" };
 
@@ -32,4 +32,21 @@ test("parseWelcome requires both boxes", () => {
   assert.equal(parseWelcome(fd({ over18: "on" })).ok, false);
   assert.equal(parseWelcome(fd({ acceptTerms: "on" })).ok, false);
   assert.equal(parseWelcome(fd({ over18: "on", acceptTerms: "on" })).ok, true);
+});
+
+test("terms version is compared, and an older version only triggers the update flow", () => {
+  const old = { ...done, terms_version: "2026-10-draft" };
+  assert.equal(TERMS_VERSION, "2026-12");
+  assert.equal(gateStatus({ userId: "user_1", member: old }), "ok", "older acceptance keeps existing access");
+  assert.equal(termsCurrent(old), false);
+  assert.equal(termsCurrent(done), true);
+  assert.equal(termsCurrent(null), false);
+  assert.equal(termsCurrent({ ...done, terms_accepted_at: null }), false);
+  assert.equal(needsTermsUpdate("ok", old), true);
+  assert.equal(needsTermsUpdate("ok", done), false);
+  assert.equal(needsTermsUpdate("needs_welcome", null), false, "new members go through the normal welcome");
+  const f = new FormData();
+  assert.equal(parseTermsUpdate(f).ok, false);
+  f.set("acceptTerms", "on");
+  assert.equal(parseTermsUpdate(f).ok, true);
 });

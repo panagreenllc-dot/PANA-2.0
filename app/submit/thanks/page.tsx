@@ -8,9 +8,14 @@ export default function ThanksPage() {
       <p className="mb-10 text-gray-400">
         Our team reviews every submission. Once approved, it will appear on the Explore Ideas page. You can edit it or check its status anytime from My PANA.
       </p>
-      <Link href="/ideas" className="rounded-xl border border-white/20 px-6 py-3 font-semibold transition hover:bg-white hover:text-black">
-        Explore ideas
-      </Link>
+      <div className="flex flex-col justify-center gap-3 sm:flex-row">
+        <Link href="/ideas" className="rounded-xl border border-white/20 px-6 py-3 font-semibold transition hover:bg-white hover:text-black">
+          Explore ideas
+        </Link>
+        <Link href="/incubator/apply" className="rounded-xl border border-green-500/40 px-6 py-3 font-semibold text-green-300 transition hover:bg-green-500/10">
+          Applying to the incubator? Continue
+        </Link>
+      </div>
     </main>
   );
 }

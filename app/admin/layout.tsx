@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 const TABS = [
   { href: "/admin", label: "Pending" },
   { href: "/admin/projects", label: "Listed projects" },
+  { href: "/admin/incubator", label: "Incubator" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/profiles", label: "Profiles" },
   { href: "/admin/members", label: "Members" },

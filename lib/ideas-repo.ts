@@ -6,7 +6,7 @@ import {
   BROWSE_SQL, EXPIRE_SQL, IDEA_AUTO_HIDE_SQL, IDEA_REPORT_INSERT_SQL, INTRO_PARTIES_SQL,
   REQUEST_INSERT_SQL, RESPOND_SQL, SENT_LAST_DAY_SQL, WITHDRAW_SQL,
 } from "@/lib/idea-sql";
-import { declinedEmail, introductionEmail, newRequestEmail, sendEmail } from "@/lib/email";
+import { declinedEmail, ideaReviewEmail, introductionEmail, newRequestEmail, sendEmail } from "@/lib/email";
 import type { IdeaRow } from "@/lib/visibility";
 
 const q = (text: string, params: unknown[]) => raw().query(text, params) as Promise<Row[]>;
@@ -189,4 +189,19 @@ export async function listRequests(userId: string): Promise<{ received: Row[]; s
     WHERE r.owner_user_id = ${userId} OR r.requester_user_id = ${userId}
     ORDER BY (r.status = 'pending') DESC, r.created_at DESC LIMIT 200`;
   return { received: rows.filter((r) => r.owner_user_id === userId), sent: rows.filter((r) => r.requester_user_id === userId) };
+}
+
+// ---------------- Review results (the "Review results for my ideas" preference) ----------------
+
+/** Email the idea's owner the review outcome, unless they turned review emails off. Best effort, never throws. */
+export async function notifyReviewResult(ideaId: string, outcome: "approved" | "changes_requested" | "rejected", note: string | null): Promise<void> {
+  try {
+    const [r] = await sql`
+      SELECT p.project_name, m.email, m.email_prefs, m.status FROM projects p JOIN members m ON m.user_id = p.user_id
+      WHERE p.id::text = ${ideaId}`;
+    if (!r?.email || r.status !== "active" || r.email_prefs?.reviews === false) return;
+    await sendEmail(ideaReviewEmail({ to: r.email, ideaName: r.project_name, ideaId, outcome, note }));
+  } catch (e) {
+    console.error("review result email failed", e);
+  }
 }

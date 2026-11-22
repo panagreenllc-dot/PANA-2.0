@@ -47,4 +47,20 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 |---|------|-----------------------|----|-------|
 | 001 | 001_moderation.sql | before 2026-10-18 | owner (Neon SQL Editor) | status/user_id/review columns |
 | 002–005 | members/audit, profiles/reports, ideas v2, collaboration | 2026-10-19 16:40 EDT | runner `--allow-production` (owner approved in writing) | Phase 2 PR 1. Backup taken first (logical JSON dump, LSN 0/6524B60) |
+| 006 | 006_collab_delivery.sql | 2026-10-19 19:39 EDT (from `schema_migrations`) | runner `--allow-production` | Collaboration delivery columns + browse index (Phase 2 PR #6). |
+| 007 | 007_blank_legacy_project_emails.sql | 2026-10-19 19:39 EDT (from `schema_migrations`) | runner `--allow-production` | Blanked legacy `projects.email` copies (0 rows at the time). |
 | 008 | domino_* tables (PANA Domino Royale Phase 1) | 2026-10-21 16:56 EDT | runner `runMigrations` over Neon WebSocket/HTTPS (port 5432 blocked from the box), owner approved in writing 2026-10-21 16:52 EDT | Backup first: `pana-prod-pre-008-20261021-205302.json` (LSN 0/6BFF9F8). Existing data verified identical afterwards. |
+| 009 | 009_incubator.sql (Phase 3 P3-1, PR #9) | 2026-11-22 12:20 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("merge it") | Backup first: `pana-prod-pre-009-20261122-172023.json` (logical JSON dump, LSN 0/DD49D60, taken 12:20 PM EST). Dry run showed only 009 pending. Existing tables, columns and data (incl. `domino_*`) verified identical afterwards. Additive: `incubator_cohorts`, `incubator_applications`. |
+
+## Preview seed (`db/seed-preview.mjs`)
+`npm run build` also runs `node db/seed-preview.mjs`, with the same guard as the runner: it only acts on a Vercel Preview
+build whose database is **not** production. It inserts "Cohort 1, Spring 2027" (by slug, never overwriting). Production is
+never seeded; John creates cohorts in **Admin → Incubator**.
+
+It also resets the Clerk **dev** test member `pana-terms+clerk_test@example.com` (code 424242) to the pre-Phase-3 Terms
+version (`2026-10-draft`) on every preview build, so the "We updated our Terms" banner can be tested. Only
+`+clerk_test@example.com` addresses are accepted by that step; real members are never touched.
+
+Note: a Neon preview branch starts as a copy of production data, so it contains real members' emails. Never add a shared
+test address (like `+clerk_test`) to a preview's `ADMIN_EMAILS` on a deployment that has a share link.
+
