@@ -30,6 +30,7 @@ export default function OfferCard({ o, canUse, showPartner = false }: { o: Row; 
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-green-300">How to use it</p>
             <p className="whitespace-pre-line">{how.text}</p>
             {how.kind === "link" && how.href && <a href={how.href} target="_blank" rel="noopener noreferrer nofollow" className="mt-2 inline-block font-semibold text-green-300 underline">Open the partner&apos;s page ↗</a>}
+            {how.kind === "request" && <Link href={`/offers/${o.id}/request`} className="mt-2 inline-block rounded-lg bg-green-500 px-4 py-2 font-semibold text-black hover:bg-green-400">Request through PANA</Link>}
             {how.kind === "badge" && <Link href="/me/badge" className="mt-2 inline-block font-semibold text-green-300 underline">Open my badge</Link>}
           </div>
         </div>

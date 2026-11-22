@@ -37,3 +37,20 @@ test("introduction goes to both parties and escapes HTML", () => {
   assert.ok(!m.html?.includes("<b>O</b>"));
   assert.equal(escapeHtml("<&>\""), "&lt;&amp;&gt;&quot;");
 });
+
+test("P3-2b notices share no addresses; only the introduction does", async () => {
+  const E = await import("./email");
+  const help = E.helpOfferNoticeEmail({ to: ["owner@x.org"], ideaName: "Idea", needTitle: "A mentor", helperName: "Sam", onBehalfOf: "IRSC", message: "I can help weekly.", url: "https://panagreen.org/me/requests/help/1" });
+  assert.ok(!help.text.includes("@") && !help.replyTo, "no addresses in the notice");
+  assert.ok(help.text.includes("for IRSC"));
+  const adm = E.offerRequestNoticeEmail({ to: ["admin@x.org"], offerTitle: "Lab", partnerName: "Library", requesterName: "Secret Name", message: "secret note", url: "u", forAdmin: true });
+  assert.ok(!adm.text.includes("Secret Name") && !adm.text.includes("secret note"), "admin notice is link-only");
+  const intro = E.requestIntroEmail({ a: { email: "a@x.org", name: "A" }, b: { email: "b@x.org", name: "B" }, subject: "s", opening: "o", message: "m", url: "u" });
+  assert.deepEqual(intro.to, ["a@x.org", "b@x.org"]);
+  assert.ok(intro.text.includes("a@x.org") && intro.text.includes("b@x.org"));
+  const pn = E.partnerNoticeEmail({ to: ["c@x.org"], partnerName: "Library", subject: "s", line: "Your offer is live." });
+  assert.ok(pn.text.includes("/partner") && !pn.text.includes("c@x.org"));
+  assert.ok(!E.adminPartnerUpdateEmail({ to: "admin@x.org", what: "offer" }).text.includes("admin@x.org"));
+  const nr = E.needReviewEmail({ to: "o@x.org", needTitle: "A mentor", ideaName: "Idea", ideaId: "abc", outcome: "changes_requested", note: "Be specific" });
+  assert.ok(nr.text.includes("Be specific") && nr.text.includes("/ideas/abc#needs"));
+});

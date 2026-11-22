@@ -5,6 +5,9 @@ import PartnerForm from "@/components/PartnerForm";
 import { formatDateTime } from "@/lib/datetime";
 import { CAN_OFFER, label, OFFER_TYPES, PARTNER_KINDS } from "@/lib/partners";
 import { adminInquiries, adminPartners, pendingOffers, sweep } from "@/lib/partners-repo";
+import { partnersWithChanges } from "@/lib/partner-portal-repo";
+import * as R from "@/lib/requests-repo";
+import { formatDateTime as fmtDT } from "@/lib/datetime";
 import { convertInquiryAction, createPartnerAction, inquiryStatusAction, publishOfferAction, sendBackOfferAction } from "./actions";
 import Subnav from "./Subnav";
 
@@ -19,7 +22,9 @@ export default async function AdminPartnersPage({ searchParams }: { searchParams
   const { error, notice, show } = await searchParams;
   await sweep();
   const filter = ["converted", "declined", "spam"].includes(show ?? "") ? show! : "open";
-  const [inquiries, partners, offers] = await Promise.all([adminInquiries(filter), adminPartners(), pendingOffers()]);
+  const [inquiries, partners, offers, changes, offerRequests] = await Promise.all([adminInquiries(filter), adminPartners(), pendingOffers(),
+    partnersWithChanges().catch(() => []), R.expireAll().then(() => R.adminOfferRequests()).catch(() => [])]);
+  const waiting = offerRequests.filter((r) => r.status === "pending");
   return (
     <section className="space-y-12">
       <Subnav active="inbox" />
@@ -86,6 +91,35 @@ export default async function AdminPartnersPage({ searchParams }: { searchParams
           </ul>
         )}
       </div>
+
+      <div id="offer-requests">
+        <h2 className="mb-1 text-xl font-semibold">Offer requests waiting for PANA ({waiting.length})</h2>
+        <p className="mb-4 text-sm text-gray-400">Requests for offers from partners with no linked contacts. Accepting introduces the member to the PANA inbox; link a contact on the partner&apos;s page to hand these over.</p>
+        {offerRequests.length === 0 ? <p className="rounded-2xl border border-dashed border-white/15 p-6 text-gray-400">No offer requests.</p> : (
+          <ul className="divide-y divide-white/10 rounded-2xl border border-white/10 px-5">
+            {offerRequests.slice(0, 50).map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <Link href={`/me/requests/offers/${r.id}`} className="hover:text-green-300">{r.subject_title} · {r.context} · {r.requester_name} · {fmtDT(r.created_at)}</Link>
+                <span className="text-xs text-gray-300">{r.status}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {changes.length > 0 && (
+        <div id="listing-changes">
+          <h2 className="mb-4 text-xl font-semibold">Listing changes from partner contacts ({changes.length})</h2>
+          <ul className="divide-y divide-white/10 rounded-2xl border border-white/10 px-5">
+            {changes.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <span>{c.name} <span className="text-gray-500">· proposed {fmtDT(c.updated_at)}</span></span>
+                <Link href={`/admin/partners/${c.id}#changes`} className="underline">Review</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-4 text-xl font-semibold">Partners ({partners.length})</h2>

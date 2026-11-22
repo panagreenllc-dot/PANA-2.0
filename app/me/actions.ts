@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import sql from "@/lib/db";
 import { getViewerCtx } from "@/lib/members";
-import { respondToRequest, retryIntro, withdrawRequest, expireStale } from "@/lib/ideas-repo";
+import * as R from "@/lib/requests-repo";
+import { isRequestKind, KIND_INFO, type RequestKind } from "@/lib/requests";
 
 async function gated() {
   const { ctx } = await getViewerCtx();
@@ -19,32 +20,42 @@ function reqId(fd: FormData): string {
   return id.toLowerCase();
 }
 
+/** Every request kind (collaboration, help offer, offer request) shares these actions; the form posts its kind. */
+function reqKind(fd: FormData): RequestKind {
+  const k = fd.get("kind") ?? "collab";
+  return isRequestKind(k) ? k : "collab";
+}
+
 export async function respondAction(fd: FormData) {
   const ctx = await gated();
   const id = reqId(fd);
+  const kind = reqKind(fd);
   const to = fd.get("decision") === "accept" ? "accepted" : "declined";
-  await expireStale();
-  const r = await respondToRequest(id, ctx.userId!, to);
+  await R.expireAll();
+  const r = await R.respond(kind, id, ctx.userId!, to, ctx.isAdmin);
   revalidatePath("/me");
-  if (!r.ok) redirect(`/me/requests/${id}?notice=unavailable`);
-  if (r.status === "accepted") redirect(`/me/requests/${id}?notice=${r.intro?.sent ? "intro-sent" : "intro-failed"}`);
-  redirect(`/me/requests/${id}?notice=declined`);
+  const path = KIND_INFO[kind].path(id);
+  if (!r.ok) redirect(`${path}?notice=unavailable`);
+  if (r.status === "accepted") redirect(`${path}?notice=${r.intro?.sent ? "intro-sent" : "intro-failed"}`);
+  redirect(`${path}?notice=declined`);
 }
 
 export async function retryIntroAction(fd: FormData) {
   const ctx = await gated();
   const id = reqId(fd);
-  const r = await retryIntro(id, ctx.userId!, ctx.isAdmin);
+  const kind = reqKind(fd);
+  const r = await R.retryIntro(kind, id, ctx.userId!, ctx.isAdmin);
   revalidatePath("/me");
-  redirect(`/me/requests/${id}?notice=${r?.sent ? "intro-sent" : "intro-failed"}`);
+  redirect(`${KIND_INFO[kind].path(id)}?notice=${r?.sent ? "intro-sent" : "intro-failed"}`);
 }
 
 export async function withdrawRequestAction(fd: FormData) {
   const ctx = await gated();
   const id = reqId(fd);
-  await withdrawRequest(id, ctx.userId!);
+  const kind = reqKind(fd);
+  await R.withdraw(kind, id, ctx.userId!);
   revalidatePath("/me");
-  redirect(`/me/requests/${id}?notice=withdrawn`);
+  redirect(`${KIND_INFO[kind].path(id)}?notice=withdrawn`);
 }
 
 export async function emailPrefsAction(fd: FormData) {

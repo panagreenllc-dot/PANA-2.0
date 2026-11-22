@@ -6,6 +6,7 @@ import { slugify } from "@/lib/incubator";
 import type { InquiryInput, OfferInput, PartnerInput } from "@/lib/partners";
 import { badgeSecret, deriveToken, hashToken, newNonce } from "@/lib/badge";
 import * as S from "@/lib/partners-sql";
+import { PORTAL_TODO_SQL } from "@/lib/partner-portal-sql";
 
 const q = (text: string, params: unknown[] = []) => raw().query(text, params) as Promise<Row[]>;
 
@@ -42,10 +43,15 @@ export const setInquiryStatus = async (id: string, status: string, adminId: stri
 export const adminPartners = (includeRemoved = false) => q(S.ADMIN_PARTNERS_SQL, [includeRemoved]);
 export const pendingOffers = () => q(S.PENDING_OFFERS_SQL);
 export const adminPartnerOffers = (partnerId: string) => q(S.ADMIN_PARTNER_OFFERS_SQL, [partnerId]);
-export const partnerTodo = async () => Number((await q(S.PARTNER_TODO_SQL))[0]?.n ?? 0);
+/** Header badge: inquiries, partners and offers to review, plus (P3-2b) proposed listing changes and offer requests only PANA can answer. */
+export const partnerTodo = async () => {
+  const base = Number((await q(S.PARTNER_TODO_SQL))[0]?.n ?? 0);
+  const portal = await q(PORTAL_TODO_SQL).then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
+  return base + portal;
+};
 
 export async function getPartner(id: string): Promise<Row | null> {
-  return (await q(`SELECT ${S.PARTNER_COLS}, p.admin_note FROM partners p WHERE p.id::text = $1`, [id]))[0] ?? null;
+  return (await q(`SELECT ${S.PARTNER_COLS}, p.admin_note, p.pending_changes FROM partners p WHERE p.id::text = $1`, [id]))[0] ?? null;
 }
 export async function getOffer(id: string): Promise<Row | null> {
   return (await q(`SELECT ${S.OFFER_COLS} FROM resource_offers o WHERE o.id::text = $1`, [id]))[0] ?? null;

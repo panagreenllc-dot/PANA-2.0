@@ -2,7 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import sql from "@/lib/db";
 import { requireMember } from "@/lib/members";
-import { expireStale, listRequests, myIdeas } from "@/lib/ideas-repo";
+import { myIdeas } from "@/lib/ideas-repo";
+import * as R from "@/lib/requests-repo";
+import { KIND_INFO, REQUEST_KINDS } from "@/lib/requests";
+import { myNeeds } from "@/lib/needs-repo";
+import { NEED_KINDS, NEED_STATUS_LABEL } from "@/lib/needs";
+import { myPartners } from "@/lib/partner-portal-repo";
 import { getProfileRow } from "@/lib/profiles-repo";
 import { emailPrefsAction } from "./actions";
 import { withdrawApplicationAction } from "@/app/incubator/actions";
@@ -24,14 +29,20 @@ const badge = (s: string) =>
 export default async function MePage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   const { userId, termsCurrent } = await requireMember("/me");
   const { saved } = await searchParams;
-  await expireStale();
-  const [ideas, { received, sent }, profile, [m], apps] = await Promise.all([
-    myIdeas(userId), listRequests(userId), getProfileRow(userId),
+  await R.expireAll();
+  const [ideas, lists, needs, partners, profile, [m], apps] = await Promise.all([
+    myIdeas(userId), Promise.all(REQUEST_KINDS.map((k) => R.listForUser(k, userId))), myNeeds(userId),
+    myPartners(userId).catch((e) => { console.error("myPartners failed", e); return []; }), getProfileRow(userId),
     sql`SELECT email_prefs FROM members WHERE user_id = ${userId}`,
     myApplications(userId).catch((e) => { console.error("myApplications failed", e); return []; }),
   ]);
   const prefs = (m?.email_prefs ?? {}) as { requests?: boolean; reviews?: boolean; incubator?: boolean; incubator_news?: boolean };
   const card = "rounded-2xl border border-white/10 p-6";
+  const reqSummary = REQUEST_KINDS.map((k, i) => ({
+    kind: k, waiting: lists[i].received.filter((r) => r.status === "pending").length,
+    sent: lists[i].sent.filter((r) => r.status === "pending").length, total: lists[i].received.length + lists[i].sent.length,
+  }));
+  const kindLabel = Object.fromEntries(NEED_KINDS.map((k) => [k.value, k.label]));
 
   return (
     <main className="mx-auto max-w-4xl space-y-10 px-6 py-20">
@@ -135,30 +146,66 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         )}
       </section>
 
-      {[{ title: "Requests received", rows: received, who: "requester_name" }, { title: "Requests sent", rows: sent, who: "owner_name" }].map((s) => (
-        <section key={s.title} className={card}>
-          <h2 className="mb-4 text-xl font-semibold">{s.title}</h2>
-          {s.rows.length === 0 ? <p className="text-gray-500">None yet.</p> : (
-            <ul className="divide-y divide-white/10">
-              {s.rows.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                  <Link href={`/me/requests/${r.id}`} className="hover:text-green-300">
-                    <span className="font-medium">{r.project_name}</span> <span className="text-sm text-gray-400">· {r[s.who]}</span>
-                  </Link>
-                  <span className={badge(r.status)}>{STATUS[r.status] ?? r.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+      <section id="needs" className={card}>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">My needs</h2>
+          <span className="text-xs text-gray-500">Add needs from one of your ideas&apos; pages</span>
+        </div>
+        <p className="mb-4 text-sm text-gray-400">What your ideas are looking for (mentorship, skills, access to space or tools). PANA reviews each need before members see it.</p>
+        {needs.length === 0 ? <p className="text-gray-500">No needs yet.</p> : (
+          <ul className="divide-y divide-white/10">
+            {needs.map((n) => (
+              <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <div>
+                  <Link href={`/ideas/${n.project_id}#needs`} className="font-medium hover:text-green-300">{n.title}</Link>
+                  <p className="text-xs text-gray-500">{kindLabel[n.kind] ?? n.kind} · {n.project_name}</p>
+                  {n.status === "changes_requested" && n.moderation_note && <p className="text-xs text-yellow-200">Note: {n.moderation_note}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {n.open_offers > 0 && <Link href="/me/requests?tab=help" className="text-xs text-green-400 underline">{n.open_offers} offer{n.open_offers > 1 ? "s" : ""} of help</Link>}
+                  <span className={badge(n.status === "open" ? "approved" : n.status === "pending" ? "pending" : n.status)}>{NEED_STATUS_LABEL[n.status] ?? n.status}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section id="requests" className={card}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Requests</h2>
+          <Link href="/me/requests" className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white hover:text-black">All requests</Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {reqSummary.map((s) => (
+            <li key={s.kind}>
+              <Link href={`/me/requests?tab=${s.kind}`} className="block rounded-xl border border-white/10 p-4 hover:border-green-500/50">
+                <p className="font-medium">{KIND_INFO[s.kind].plural}</p>
+                <p className="text-sm text-gray-400">{s.waiting ? <span className="text-green-300">{s.waiting} waiting for you</span> : "Nothing waiting"}{s.sent ? ` · ${s.sent} sent, pending` : ""}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {partners.length > 0 && (
+        <section id="partner" className={card}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold">Partner portal</h2>
+              <p className="text-sm text-gray-400">You&apos;re a contact for {partners.map((p) => p.name).join(", ")}.</p>
+            </div>
+            <Link href="/partner" className="rounded-xl bg-green-500 px-4 py-2 text-sm font-semibold text-black hover:bg-green-400">Open partner portal</Link>
+          </div>
         </section>
-      ))}
+      )}
 
       <section className={card}>
         <h2 className="mb-4 text-xl font-semibold">Email notifications</h2>
         {saved === "prefs" && <p className="mb-3 text-sm text-green-300">Preferences saved.</p>}
         <form action={emailPrefsAction} className="space-y-3">
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="requests" defaultChecked={prefs.requests !== false} className="h-4 w-4 accent-green-500" /> New collaboration requests on my ideas</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="reviews" defaultChecked={prefs.reviews !== false} className="h-4 w-4 accent-green-500" /> Review results for my ideas</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="requests" defaultChecked={prefs.requests !== false} className="h-4 w-4 accent-green-500" /> New requests: collaboration on my ideas, offers of help on my needs, and requests for my organization&apos;s offers</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="reviews" defaultChecked={prefs.reviews !== false} className="h-4 w-4 accent-green-500" /> Review results for my ideas and needs</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator" defaultChecked={prefs.incubator !== false} className="h-4 w-4 accent-green-500" /> Updates on my incubator applications</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator_news" defaultChecked={prefs.incubator_news === true} className="h-4 w-4 accent-green-500" /> Tell me when incubator applications open</label>
           <p className="text-xs text-gray-500">Introduction emails for requests you accept or that are accepted are always sent, since they&apos;re how you connect.</p>

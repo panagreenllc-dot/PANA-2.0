@@ -135,3 +135,35 @@ export function toIdeaView(v: ViewerCtx, i: IdeaRow): IdeaView | null {
   if (i.help_needed?.length && canSeeLevel(v, fv.help_needed, i.user_id)) out.help_needed = i.help_needed;
   return out;
 }
+
+// ---------------- Needs (P3-2b) ----------------
+// A need is NEVER more visible than its idea: it can only be seen by someone who can see the idea itself, and
+// (except for the owner and admins) only when the idea is approved and not hidden, and the need is reviewed.
+
+export type NeedRow = {
+  id: string; project_id: string; owner_user_id: string; kind: string; title: string; details: string | null;
+  amount_text: string | null; status: string; moderation_note?: string | null; created_at?: Date | string | null;
+  updated_at?: Date | string | null;
+};
+export type NeedView = Omit<NeedRow, "moderation_note"> & { isOwner: boolean; moderation_note?: string | null };
+
+export const PUBLIC_NEED_STATUSES = ["open", "met"];
+
+export function toNeedView(v: ViewerCtx, idea: Pick<IdeaRow, "user_id" | "status" | "audience" | "hidden_by_reports">, n: NeedRow): NeedView | null {
+  if (String(n.owner_user_id) !== String(idea.user_id)) return null; // a need belongs to its idea's owner
+  if (!canViewIdea(v, idea)) return null;
+  const isOwner = !!v.userId && v.userId === idea.user_id;
+  const { moderation_note, ...rest } = n;
+  if (isOwner || v.isAdmin) return { ...rest, isOwner, moderation_note: moderation_note ?? null };
+  if (idea.status !== "approved" || idea.hidden_by_reports) return null;
+  if (!PUBLIC_NEED_STATUSES.includes(n.status)) return null;
+  return { ...rest, isOwner: false };
+}
+
+/** Can this viewer offer help on this need (ignoring rate limits / duplicates)? Never true for the owner. */
+export function needIsOpenFor(v: ViewerCtx, idea: Pick<IdeaRow, "user_id" | "status" | "audience" | "hidden_by_reports">, n: NeedRow): boolean {
+  if (!isGatedMember(v) || !v.userId || v.userId === idea.user_id) return false;
+  // Judge as an ordinary member even for admins, so admins can't open requests on hidden ideas.
+  const asMember = { ...v, isAdmin: false };
+  return n.status === "open" && !!toNeedView(asMember, idea, n);
+}

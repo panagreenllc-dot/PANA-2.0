@@ -21,12 +21,13 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
     stage: pick(sp.stage, STAGES.map((k) => k.value)),
     help: pick(sp.help, HELP_NEEDED.map((k) => k.value)),
     q: (sp.q ?? "").slice(0, 80),
+    needs: sp.needs === "1" ? "1" : undefined,
   };
   const page = Math.max(1, Number(sp.page) || 1);
   let rows: Awaited<ReturnType<typeof browseIdeas>>["rows"] = [];
   let total = 0;
   try {
-    ({ rows, total } = await browseIdeas(gated, { ...f, limit: PAGE, offset: (page - 1) * PAGE }));
+    ({ rows, total } = await browseIdeas(gated, { ...f, needs: f.needs === "1", limit: PAGE, offset: (page - 1) * PAGE }));
   } catch (e) {
     console.error("browseIdeas failed", e);
   }
@@ -58,6 +59,9 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
           <select name="help" defaultValue={f.help ?? ""} className={`${sel} flex-1`}><option value="">Any help</option>{HELP_NEEDED.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}</select>
           <button className="rounded-lg border border-white/20 px-4 py-2 text-sm">Filter</button>
         </div>
+        <label className="flex items-center gap-2 text-sm text-gray-300 lg:col-span-6">
+          <input type="checkbox" name="needs" value="1" defaultChecked={f.needs === "1"} className="h-4 w-4 accent-green-500" /> Has open needs (ideas looking for help you could offer)
+        </label>
       </form>
 
       {ideas.length === 0 ? (

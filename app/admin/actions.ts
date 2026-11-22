@@ -160,3 +160,20 @@ export async function deleteMember(formData: FormData) {
   await audit(admin.id, "delete_member", "member", target);
   refresh();
 }
+
+// ----- Needs on ideas (P3-2b) -----
+
+async function needReview(formData: FormData, decision: "approve" | "send_back") {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) fail(formData, "Invalid need id.");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
+  const { reviewNeed } = await import("@/lib/needs-repo");
+  const r = await reviewNeed(id.toLowerCase(), decision, admin.id, note);
+  if (!r) fail(formData, "That need was already reviewed.");
+  await audit(admin.id, decision === "approve" ? "need_approve" : "need_send_back", "need", id, note ?? undefined);
+  refresh();
+  redirect("/admin#needs");
+}
+export async function approveNeedAction(formData: FormData) { await needReview(formData, "approve"); }
+export async function sendBackNeedAction(formData: FormData) { await needReview(formData, "send_back"); }
