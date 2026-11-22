@@ -183,3 +183,65 @@ export function adminNewInquiryEmail(p: { to: string }): EmailMessage {
     text: `Someone filled in the "Become a partner" form.\n\nSee it in admin (sign in required): ${SITE_URL}/admin/partners\n\nThis notice has no contact details by design.`,
   };
 }
+
+// ---- Phase 3 / P3-2b: help offers, offer requests, needs and partner notices ----
+// Same rule as collaboration: a notice never contains an address; the ONLY email that shares addresses is the
+// introduction, sent after the responder accepts.
+
+const SAFETY = "PANA introduces members but doesn't vet them. Take care when sharing personal or confidential information.";
+
+export function helpOfferNoticeEmail(p: { to: string[]; ideaName: string; needTitle: string; helperName: string; onBehalfOf: string | null; message: string; url: string }): EmailMessage {
+  return {
+    to: p.to,
+    subject: `Someone offered to help: "${p.needTitle}"`,
+    text: `${p.helperName}${p.onBehalfOf ? ` (for ${p.onBehalfOf})` : ""} offered to help with your need "${p.needTitle}" on "${p.ideaName}".\n\nTheir note:\n"${p.message}"\n\nAccept or decline here: ${p.url}\n\nYour email address has not been shared. If you accept, PANA will introduce you both by email. Offers expire after 30 days.${FOOTER}`,
+  };
+}
+
+export function offerRequestNoticeEmail(p: { to: string[]; offerTitle: string; partnerName: string; requesterName: string; message: string; url: string; forAdmin?: boolean }): EmailMessage {
+  return {
+    to: p.to,
+    subject: `New request for "${p.offerTitle}"`,
+    text: p.forAdmin
+      ? `A PANA member requested "${p.offerTitle}" (${p.partnerName}). This partner has no linked contacts yet, so PANA answers it.\n\nReview it (sign in required): ${p.url}\n\nThis notice has no member details by design.`
+      : `${p.requesterName} would like to use "${p.offerTitle}" from ${p.partnerName}, through PANA.\n\nTheir note:\n"${p.message}"\n\nAccept or decline here: ${p.url}\n\nTheir email address has not been shared, and neither has yours. If you accept, PANA will introduce you both by email. Requests expire after 30 days.${FOOTER}`,
+  };
+}
+
+/** The one email that shares both addresses, after an accepted help offer or offer request. */
+export function requestIntroEmail(p: { a: { email: string; name: string }; b: { email: string; name: string }; subject: string; opening: string; message: string; url: string }): EmailMessage {
+  return {
+    to: [p.a.email, p.b.email],
+    replyTo: [p.a.email, p.b.email],
+    subject: p.subject,
+    text: `Hi ${p.a.name} and ${p.b.name},\n\n${p.opening}\n\n${p.a.name}: ${p.a.email}\n${p.b.name}: ${p.b.email}\n\nThe original note:\n"${p.message}"\n\nReply-all to start the conversation. ${p.url}\n\n${SAFETY} Report concerns from the page on PANA.\n\nPANA 2.0 · Where Community Meets Innovation`,
+  };
+}
+
+export function requestDeclinedEmail(p: { to: string; subject: string; line: string; nextUrl: string }): EmailMessage {
+  return { to: [p.to], subject: p.subject, text: `${p.line}\n\nThere's more to explore: ${p.nextUrl}${FOOTER}` };
+}
+
+export function needReviewEmail(p: { to: string; needTitle: string; ideaName: string; ideaId: string; outcome: "approved" | "changes_requested"; note: string | null }): EmailMessage {
+  return p.outcome === "approved"
+    ? { to: [p.to], subject: `Your need is live: ${p.needTitle}`, text: `Your need "${p.needTitle}" on "${p.ideaName}" was approved. Members who can see your idea can now offer help.\n\nSee it: ${SITE_URL}/ideas/${p.ideaId}#needs${FOOTER}` }
+    : { to: [p.to], subject: `Changes requested: ${p.needTitle}`, text: `Your need "${p.needTitle}" on "${p.ideaName}" needs a few changes before it goes live.${p.note ? `\n\nNote from the reviewer:\n"${p.note}"` : ""}\n\nEdit it here: ${SITE_URL}/ideas/${p.ideaId}#needs${FOOTER}` };
+}
+
+/** Status notice to a partner's contacts ("your offer is live" / "needs changes" / listing updates). */
+export function partnerNoticeEmail(p: { to: string[]; partnerName: string; subject: string; line: string; note?: string | null }): EmailMessage {
+  return {
+    to: p.to,
+    subject: p.subject,
+    text: `${p.line}${p.note ? `\n\nNote from PANA:\n"${p.note}"` : ""}\n\nPartner portal (sign in required): ${SITE_URL}/partner\n\nYou're getting this because you're listed as a contact for ${p.partnerName} on PANA.\n\nPANA 2.0 · Where Community Meets Innovation`,
+  };
+}
+
+/** Link-only notice to the admin inbox when a partner contact submits an offer or listing change. */
+export function adminPartnerUpdateEmail(p: { to: string; what: "offer" | "listing" }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: p.what === "offer" ? "New partner offer waiting for review" : "Partner listing changes waiting for review",
+    text: `A partner contact submitted ${p.what === "offer" ? "an offer" : "listing changes"} on PANA.\n\nReview in admin (sign in required): ${SITE_URL}/admin/partners\n\nThis notice has no details by design.`,
+  };
+}

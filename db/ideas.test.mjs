@@ -21,7 +21,7 @@ async function db() {
   return { pg, d, idea };
 }
 const browse = (d, gated, { help = null, q = "" } = {}) =>
-  d.query(BROWSE_SQL, [gated, null, null, null, help, q, `%${q}%`, 24, 0]);
+  d.query(BROWSE_SQL, [gated, null, null, null, help, q, `%${q}%`, 24, 0, false]);
 
 test("migrations 006/007 apply: legacy emails blanked, new columns exist", async () => {
   const { pg, d } = await db();

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { isDotPath } from "@/lib/paths";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isMemberArea = createRouteMatcher(["/members(.*)", "/me(.*)", "/welcome(.*)", "/incubator/apply(.*)"]);
+const isMemberArea = createRouteMatcher(["/members(.*)", "/me(.*)", "/welcome(.*)", "/incubator/apply(.*)", "/partner", "/partner/(.*)", "/offers/(.*)"]);
 const isBadgeCheck = createRouteMatcher(["/verify(.*)"]);
 
 const notFound = () => new NextResponse("Not Found", {

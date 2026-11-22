@@ -10,6 +10,8 @@ import {
   convertInquiry, createOffer, createPartner, getOffer, offerAction, reinstateBadge, revokeBadge, setInquiryStatus,
   setPartnerStatus, updateOffer, updatePartner,
 } from "@/lib/partners-repo";
+import { getPartner } from "@/lib/partners-repo";
+import { addContact, applyChanges, discardChanges, notifyContacts, removeContact } from "@/lib/partner-portal-repo";
 
 const to = (path: string, q: Record<string, string>) => `${path}?${new URLSearchParams(q).toString()}`;
 const refresh = () => { revalidatePath("/admin", "layout"); revalidatePath("/partners", "layout"); revalidatePath("/incubator/resources"); };
@@ -117,6 +119,13 @@ async function act(fd: FormData, action: string) {
   const back = String(fd.get("back") ?? "") === "queue" || !before ? "/admin/partners" : `/admin/partners/${before.partner_id}`;
   const r = await offerAction(id, action, admin.id, note(fd));
   if (r) await audit(admin.id, `offer_${action}`, "offer", id, note(fd) ?? undefined);
+  if (r && before && (action === "publish" || action === "send_back")) {
+    const partner = await getPartner(String(before.partner_id));
+    if (partner) await notifyContacts(String(partner.id), String(partner.name),
+      action === "publish" ? `Your offer is live: ${before.title}` : `Changes requested: ${before.title}`,
+      action === "publish" ? `"${before.title}" is now live on PANA.` : `PANA asked for a few changes to "${before.title}" before it goes live.`,
+      action === "send_back" ? note(fd) : null);
+  }
   refresh();
   redirect(to(back, r ? { notice: `offer-${action}` } : { error: action === "publish" ? "Can't publish: check its status and end date." : "That change isn't possible from the offer's current status." }));
 }
@@ -147,3 +156,48 @@ export async function reinstateBadgeAction(fd: FormData) {
   if (ok) await audit(admin.id, "badge_reinstate", "badge", id);
   redirect(to("/admin/partners/badges", ok ? { notice: "reinstated" } : { error: "Couldn't reinstate (badges may not be switched on)." }));
 }
+
+// ---------- Partner contacts + proposed listing changes (P3-2b) ----------
+
+export async function addContactAction(fd: FormData) {
+  const admin = await requireAdmin();
+  const partnerId = parseUuid(fd.get("partner_id"));
+  const userId = String(fd.get("user_id") ?? "").slice(0, 100);
+  const role = fd.get("role") === "manager" ? "manager" : "staff";
+  if (!partnerId || !userId) redirect(to("/admin/partners", { error: "Invalid request." }));
+  const ok = await addContact(partnerId, userId, role, admin.id);
+  if (ok) await audit(admin.id, "partner_contact_add", "partner", partnerId, `${userId} (${role})`);
+  refresh();
+  redirect(to(`/admin/partners/${partnerId}`, ok ? { notice: "contact-added" } : { error: "Couldn't add that member (they must be an active member who finished joining)." }) + "#contacts");
+}
+
+export async function removeContactAction(fd: FormData) {
+  const admin = await requireAdmin();
+  const partnerId = parseUuid(fd.get("partner_id"));
+  const id = parseUuid(fd.get("id"));
+  if (!partnerId || !id) redirect(to("/admin/partners", { error: "Invalid request." }));
+  const ok = await removeContact(id, partnerId);
+  if (ok) await audit(admin.id, "partner_contact_remove", "partner", partnerId, id);
+  refresh();
+  redirect(to(`/admin/partners/${partnerId}`, ok ? { notice: "contact-removed" } : { error: "Contact not found." }) + "#contacts");
+}
+
+async function changes(fd: FormData, apply: boolean) {
+  const admin = await requireAdmin();
+  const partnerId = parseUuid(fd.get("partner_id"));
+  if (!partnerId) redirect(to("/admin/partners", { error: "Invalid request." }));
+  const ok = apply ? await applyChanges(partnerId) : await discardChanges(partnerId);
+  if (ok) {
+    await audit(admin.id, apply ? "partner_changes_apply" : "partner_changes_discard", "partner", partnerId);
+    const partner = await getPartner(partnerId);
+    if (partner) await notifyContacts(partnerId, String(partner.name),
+      apply ? "Your listing changes are live" : "About your listing changes",
+      apply ? `Your proposed changes to ${partner.name}'s PANA listing were approved.` : `PANA didn't apply your proposed changes to ${partner.name}'s listing. Reply to PANA if you have questions.`,
+      apply ? null : note(fd));
+  }
+  refresh();
+  const back = String(fd.get("back") ?? "") === "queue" ? "/admin/partners" : `/admin/partners/${partnerId}`;
+  redirect(to(back, ok ? { notice: apply ? "changes-applied" : "changes-discarded" } : { error: "No pending changes." }));
+}
+export async function applyChangesAction(fd: FormData) { await changes(fd, true); }
+export async function discardChangesAction(fd: FormData) { await changes(fd, false); }

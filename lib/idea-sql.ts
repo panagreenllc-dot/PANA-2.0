@@ -26,6 +26,8 @@ export const BROWSE_SQL = `
     AND ($6 = '' OR p.project_name ILIKE $7 OR p.description ILIKE $7 OR p.category ILIKE $7
          OR (p.details ILIKE $7 AND (coalesce(p.field_visibility->>'details', 'members') = 'public'
              OR (coalesce(p.field_visibility->>'details', 'members') = 'members' AND $1::boolean))))
+    AND (NOT $10::boolean OR EXISTS (SELECT 1 FROM project_needs n
+         WHERE n.project_id = p.id AND n.owner_user_id = p.user_id AND n.status = 'open'))
   ORDER BY p.created_at DESC
   LIMIT $8 OFFSET $9`;
 

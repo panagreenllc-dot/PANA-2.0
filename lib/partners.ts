@@ -40,9 +40,9 @@ export const ELIGIBILITY = [
   { value: "members", label: "All PANA members" },
   { value: "public", label: "Anyone" },
 ] as const;
-/** request_via_pana arrives with P3-2b (offer requests); the schema already allows it. */
 export const CLAIM_METHODS = [
   { value: "show_badge", label: "Show your PANA incubator badge" },
+  { value: "request_via_pana", label: "Request through PANA (PANA introduces them)" },
   { value: "external_link", label: "Follow the partner's link" },
 ] as const;
 export const OFFER_STATUSES = ["draft", "pending", "published", "paused", "expired", "archived"] as const;
@@ -114,6 +114,21 @@ export function parsePartner(fd: FormData): { data?: PartnerInput; error?: strin
   if (website && !isUrl(website)) return { error: "Website must be a full link starting with https://" };
   if (area && area.length > 120) return { error: "Area must be under 120 characters." };
   return { data: { name, slug, kind, summary, website, area, public_listing } };
+}
+
+/** Listing text a partner contact may propose from the portal (John approves before it goes live). */
+export type ListingChangesInput = { name: string; summary: string | null; website: string | null; area: string | null };
+export function parseListingChanges(fd: FormData): { data?: ListingChangesInput; error?: string } {
+  const name = str(fd, "name");
+  const summary = multiline(fd, "summary") || null;
+  const website = str(fd, "website") || null;
+  const area = str(fd, "area") || null;
+  if (name.length < 2 || name.length > 120) return { error: "Name must be 2–120 characters." };
+  if (summary && summary.length > 1000) return { error: "Summary must be under 1,000 characters." };
+  if (website && !isUrl(website)) return { error: "Website must be a full link starting with https://" };
+  if (area && area.length > 120) return { error: "Area must be under 120 characters." };
+  if (EMAIL_RE.test(`${summary ?? ""}`.split(/\s+/).find((w) => w.includes("@")) ?? "")) return { error: "Please don't put email addresses in the public listing." };
+  return { data: { name, summary, website, area } };
 }
 
 // ---------- Offer (admin) ----------
@@ -190,7 +205,7 @@ export function audienceLabel(o: OfferLike): string {
 /** "How to use it" line for an offer the viewer can use. */
 export function howToUse(o: { claim_method: string; external_url: string | null; how_to: string | null }): { kind: string; text: string; href?: string } {
   if (o.claim_method === "external_link" && o.external_url) return { kind: "link", text: o.how_to || "Follow the partner's link to sign up or book.", href: o.external_url };
-  if (o.claim_method === "request_via_pana") return { kind: "request", text: o.how_to || "Requests through PANA open soon." };
+  if (o.claim_method === "request_via_pana") return { kind: "request", text: o.how_to || "Send a short request through PANA. If it's accepted, PANA introduces you to the partner by email." };
   return { kind: "badge", text: o.how_to || "Show your PANA incubator badge (My PANA → Badge) and a photo ID at the location.", href: "/me/badge" };
 }
 

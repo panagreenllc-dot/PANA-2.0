@@ -36,7 +36,8 @@ test("partner and offer parsing: access only, no money amounts, consistent claim
   assert.equal(parseOffer(fd(base)).data?.claim_method, "show_badge");
   assert.ok(parseOffer(fd({ ...base, eligibility: "public" })).error, "badge needs participants");
   assert.ok(parseOffer(fd({ ...base, claim_method: "external_link" })).error, "link needs url");
-  assert.ok(parseOffer(fd({ ...base, claim_method: "request_via_pana" })).error, "not until P3-2b");
+  assert.equal(parseOffer(fd({ ...base, claim_method: "request_via_pana", eligibility: "members" })).data?.claim_method, "request_via_pana", "P3-2b: requests through PANA");
+  assert.ok(parseOffer(fd({ ...base, claim_method: "request_via_pana", external_url: "https://x.org" })).error, "requests have no link");
   assert.ok(parseOffer(fd({ ...base, title: "Free $500 for you" })).error, "no money amounts");
   assert.ok(parseOffer(fd({ ...base, type: "grant" })).error);
   assert.ok(parseOffer(fd({ ...base, starts_on: "2027-03-10", ends_on: "2027-03-01" })).error);
