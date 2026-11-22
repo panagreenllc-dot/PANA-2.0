@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { parseProjectId } from "@/lib/ids";
 import { phase3Ctx } from "@/lib/phase3-gate";
 import { canSend, parseRequestMessage, SEND_ERRORS } from "@/lib/requests";
-import { INVESTOR_INTEREST_PER_DAY } from "@/lib/mentors";
+import { hasMoneyAmount, INVESTOR_INTEREST_PER_DAY, MONEY_ERROR } from "@/lib/mentors";
 import { canViewIdea, isGatedMember } from "@/lib/visibility";
 import { getIdea } from "@/lib/ideas-repo";
 import { isApprovedInvestor, setInvestorOpen } from "@/lib/mentors-repo";
@@ -32,6 +32,7 @@ export async function investorInterestAction(rawIdeaId: string, prev: InterestSt
   const ctx = await phase3Ctx(`/ideas/${id}`);
   const parsed = parseRequestMessage(fd, "investor");
   if (!parsed.ok) return fail(parsed.error);
+  if (hasMoneyAmount(parsed.message)) return fail(MONEY_ERROR);
   const idea = await getIdea(id);
   if (!idea) return fail("Idea not found.");
   if (!(await isApprovedInvestor(ctx.userId))) return fail("Only PANA-approved investors can send investor interest. Apply from your profile.");

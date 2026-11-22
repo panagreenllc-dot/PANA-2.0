@@ -40,6 +40,9 @@ export type MentorInput = { expertise: string[]; bio: string; availability: stri
 export type InvestorInput = { investor_type: string; focus_categories: string[]; stage_focus: string[]; organization: string | null; bio: string };
 
 const MONEY_RE = /\$\s?\d|\b\d[\d,.]*\s?(k|m|mm|usd|dollars?|bucks|million|thousand)\b/i;
+/** True when text names a money amount or check size ("$5,000", "25k", "2 million"). */
+export const hasMoneyAmount = (text: string) => MONEY_RE.test(text);
+export const MONEY_ERROR = "Please leave out money amounts and check sizes. PANA only makes introductions.";
 const clean = (v: unknown) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").replace(/\r\n/g, "\n").trim();
 const pickAll = (fd: FormData, key: string, allowed: readonly string[]) =>
   [...new Set(fd.getAll(key).map(String).filter((v) => allowed.includes(v)))];
@@ -67,7 +70,7 @@ export function parseInvestor(fd: FormData): { data?: InvestorInput; error?: str
   if (organization && organization.length > INVESTOR_LIMITS.organization) return { error: `Organization must be under ${INVESTOR_LIMITS.organization} characters.` };
   if (bio.length < INVESTOR_LIMITS.bio[0] || bio.length > INVESTOR_LIMITS.bio[1]) return { error: `Write ${INVESTOR_LIMITS.bio[0]}–${INVESTOR_LIMITS.bio[1]} characters about what you look for.` };
   const all = `${bio} ${organization ?? ""}`;
-  if (MONEY_RE.test(all)) return { error: "Please leave out money amounts and check sizes. PANA only makes introductions." };
+  if (MONEY_RE.test(all)) return { error: MONEY_ERROR };
   if (containsContactInfo(all)) return { error: "Please don't include email addresses or phone numbers. PANA introduces you when an owner accepts." };
   return { data: { investor_type, focus_categories, stage_focus, organization, bio } };
 }

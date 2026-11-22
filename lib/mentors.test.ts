@@ -1,7 +1,7 @@
 // Run: npm test. Mentor and investor role rules (P3-3).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canAdminDecide, investorChanged, mentorChanged, parseInvestor, parseMentor, roleStatusAfterSave } from "./mentors";
+import { canAdminDecide, hasMoneyAmount, investorChanged, mentorChanged, parseInvestor, parseMentor, roleStatusAfterSave } from "./mentors";
 
 const fd = (o: Record<string, string | string[]>) => {
   const f = new FormData();
@@ -51,4 +51,9 @@ test("admin decisions by status", () => {
   assert.ok(canAdminDecide("approved", "revoke") && canAdminDecide("paused", "revoke"));
   assert.ok(!canAdminDecide("pending", "revoke"));
   assert.ok(canAdminDecide("revoked", "approve"), "John can restore a badge");
+});
+
+test("hasMoneyAmount catches amounts in interest notes, not ordinary numbers", () => {
+  for (const t of ["happy to talk about a $5,000 grant", "we write 25k checks", "up to 2 million", "500 dollars"]) assert.equal(hasMoneyAmount(t), true, t);
+  for (const t of ["We back 3 teams a year", "2 hrs/month", "Grade 10 students"]) assert.equal(hasMoneyAmount(t), false, t);
 });
