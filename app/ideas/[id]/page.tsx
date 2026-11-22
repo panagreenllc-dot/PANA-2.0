@@ -16,6 +16,9 @@ import NeedForm from "@/components/NeedForm";
 import HelpForm from "@/components/HelpForm";
 import { addNeedAction, needStatusAction, offerHelpAction, updateNeedAction } from "../needs-actions";
 import CollabForm from "@/components/CollabForm";
+import InterestForm from "@/components/InterestForm";
+import { investorInterestAction, setInvestorOpenAction } from "../investor-actions";
+import { isApprovedInvestor } from "@/lib/mentors-repo";
 import ConfirmButton from "@/components/ConfirmButton";
 import { reportIdeaAction, requestCollabAction, resubmitIdeaAction, withdrawIdeaAction } from "../actions";
 
@@ -47,6 +50,9 @@ const NOTICES: Record<string, string> = {
   "need-met": "Marked as met. Thanks for keeping your needs up to date.",
   "need-closed": "Need closed.",
   "need-open": "Need re-opened.",
+  "investors-on": "Investor interest is on. PANA-approved investors can now say they're interested; you decide whether to be introduced.",
+  "investors-off": "Investor interest is off. Investors can't send new interest.",
+  "investors-denied": "Only the idea's owner can change this.",
 };
 
 export default async function IdeaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> }) {
@@ -77,6 +83,9 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
   const helperPartners = gated && !isOwner && ctx.userId && needs.some((x) => x.row.status === "open")
     ? (await myPartners(ctx.userId).catch(() => [])).filter((p) => p.status === "approved").map((p) => ({ id: String(p.id), name: String(p.name) }))
     : [];
+  const investorOpen = !!idea.investor_interest_open;
+  const isInvestor = gated && !isOwner && live && investorOpen && ctx.userId ? await isApprovedInvestor(ctx.userId).catch(() => false) : false;
+  const interestSent = isInvestor ? await R.hasOpen("investor", id, ctx.userId!) : false;
   const needKind = (k: string) => NEED_KINDS.find((x) => x.value === k)?.label ?? k;
 
   return (
@@ -168,6 +177,40 @@ export default async function IdeaPage({ params, searchParams }: { params: Promi
               <summary className="cursor-pointer text-sm font-semibold text-green-400 hover:text-green-300">Add a need</summary>
               <div className="mt-3"><NeedForm action={addNeedAction.bind(null, id)} submitLabel="Add need" /></div>
             </details>
+          )}
+        </section>
+      )}
+
+      {isOwner && idea.status !== "rejected" && idea.status !== "withdrawn" && (
+        <section id="investors" className="mt-12 scroll-mt-24 rounded-2xl border border-white/10 p-6">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold">Open to investor interest</h2>
+            <span className={`rounded-full px-2 py-0.5 text-xs ${investorOpen ? "bg-green-500/15 text-green-300" : "bg-white/10 text-gray-300"}`}>{investorOpen ? "On" : "Off"}</span>
+          </div>
+          <p className="mb-4 text-sm text-gray-400">
+            When this is on, PANA-approved investors, sponsors and grant-makers who can see your idea may send a short note saying they&apos;re
+            interested. You accept or decline each one; only on accept does PANA introduce you by email. Your private fields stay private.
+            PANA doesn&apos;t vet investors, give advice, or take part in any deal.
+          </p>
+          <form action={setInvestorOpenAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="open" value={String(!investorOpen)} />
+            {investorOpen
+              ? <button className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white/10">Turn off investor interest</button>
+              : <ConfirmButton message="Let PANA-approved investors send you interest in this idea? You decide on each one." className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-black hover:bg-green-400">Turn on investor interest</ConfirmButton>}
+          </form>
+        </section>
+      )}
+
+      {isInvestor && (
+        <section id="investors" className="mt-12 scroll-mt-24 rounded-2xl border border-green-500/30 p-6">
+          <h2 className="mb-2 text-xl font-semibold">Interested as an investor?</h2>
+          {interestSent ? (
+            <p className="text-gray-300">You&apos;ve told the owner you&apos;re interested. Track it in <Link href="/me/requests?tab=investor" className="text-green-400 underline">My requests</Link>.</p>
+          ) : (
+            <>
+              <p className="mb-4 text-sm text-gray-400">The owner opened this idea to investor interest. Send a short note; if they accept, PANA introduces you both by email.
+                PANA doesn&apos;t vet anyone or take part in any deal. Up to 10 a day.</p>
+              <InterestForm action={investorInterestAction.bind(null, id)} />
+            </>
           )}
         </section>
       )}

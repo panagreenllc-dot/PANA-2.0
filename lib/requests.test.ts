@@ -55,3 +55,15 @@ test("sides and paths", () => {
   assert.equal(KIND_INFO.offer.path("abc"), "/me/requests/offers/abc");
   assert.equal(KIND_INFO.collab.path("abc"), "/me/requests/abc", "existing collaboration links keep working");
 });
+
+test("P3-3 kinds: mentorship and investor interest use the same rules, with per-kind daily caps", () => {
+  assert.ok(isRequestKind("mentorship") && isRequestKind("investor"));
+  assert.equal(KIND_INFO.mentorship.path("x"), "/me/requests/mentorship/x");
+  assert.equal(KIND_INFO.investor.path("x"), "/me/requests/investor/x");
+  assert.equal(reason(canSend({ ...base, kindSentLast24h: 4, kindLimit: 5 })), "ok");
+  assert.equal(reason(canSend({ ...base, kindSentLast24h: 5, kindLimit: 5 })), "rate_limited", "5 mentorship requests a day");
+  assert.equal(reason(canSend({ ...base, sentLast24h: MAX_REQUESTS_PER_DAY, kindSentLast24h: 0, kindLimit: 10 })), "rate_limited", "the shared limit still applies");
+  const m = parseRequestMessage(fd({ message: "short" }), "mentorship");
+  assert.ok(!m.ok && m.error.includes("what you'd like help with"));
+  assert.ok(!parseRequestMessage(fd({ message: "Email me at investor@fund.com to talk terms." }), "investor").ok);
+});

@@ -47,6 +47,7 @@ export default function CommunityPage() {
             <Link href="/members" className={btnPrimary}>Browse members</Link>
             <Link href="/me/profile" className={btnSecondary}>Create your profile</Link>
           </div>
+          <p className="mt-4 text-sm text-gray-400">Looking for guidance? <Link href="/mentors" className="text-green-400 underline">Find a volunteer mentor</Link>, or <Link href="/me/profile#mentor" className="text-green-400 underline">apply to mentor</Link>.</p>
         </div>
         <div className="rounded-2xl border border-white/10 p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Membership</p>

@@ -1,12 +1,13 @@
 // Shared request + introduction flow (P3-2b) for every kind: collaboration requests on ideas, help offers on needs,
-// and "Request through PANA" offer requests. P3-3 (mentors) adds a kind here instead of copying the flow.
+// "Request through PANA" offer requests, and (P3-3) mentorship requests and investor interest.
 // Rule: no email address is shown or sent to anyone until the responder accepts; then ONE introduction email goes
 // to both sides. SQL lives in lib/requests-sql.ts (tested on PGlite).
 import { raw, type Row } from "@/lib/db";
 import {
   adminNotifyAddress, declinedEmail, introductionEmail, newRequestEmail, offerRequestNoticeEmail, helpOfferNoticeEmail,
-  requestDeclinedEmail, requestIntroEmail, sendEmail, SITE_URL, type EmailMessage,
+  investorInterestNoticeEmail, mentorshipNoticeEmail, NOT_VETTED, requestDeclinedEmail, requestIntroEmail, sendEmail, SITE_URL, type EmailMessage,
 } from "@/lib/email";
+import { INVESTOR_TYPES, label } from "@/lib/mentors";
 import { KIND_INFO, type RequestKind } from "@/lib/requests";
 import * as S from "@/lib/requests-sql";
 
@@ -27,6 +28,8 @@ export async function expireAll(): Promise<void> {
 }
 
 export const sentLastDayAll = async (userId: string) => Number((await q(S.SENT_LAST_DAY_ALL_SQL, [userId]))[0]?.n ?? 0);
+export const sentLastDayKind = async (kind: keyof typeof S.SENT_LAST_DAY_KIND_SQL, userId: string) =>
+  Number((await q(S.SENT_LAST_DAY_KIND_SQL[kind], [userId]))[0]?.n ?? 0);
 export const hasOpen = async (kind: RequestKind, targetId: string, userId: string) => (await q(S.HAS_OPEN_SQL[kind], [targetId, userId])).length > 0;
 
 export async function listForUser(kind: RequestKind, userId: string): Promise<{ received: RequestRow[]; sent: RequestRow[] }> {
@@ -49,6 +52,13 @@ export async function createOfferRequest(offerId: string, userId: string, messag
   return ((await q(S.OFFER_REQUEST_INSERT_SQL, [offerId, userId, message, projectId]))[0]?.id as string) ?? null;
 }
 
+export async function createMentorshipRequest(mentorId: string, menteeId: string, message: string, projectId: string | null): Promise<string | null> {
+  return ((await q(S.MENTORSHIP_INSERT_SQL, [mentorId, menteeId, message, projectId]))[0]?.id as string) ?? null;
+}
+export async function createInvestorInterest(ideaId: string, investorId: string, message: string): Promise<string | null> {
+  return ((await q(S.INVESTOR_INSERT_SQL, [ideaId, investorId, message]))[0]?.id as string) ?? null;
+}
+
 // ---------- Emails ----------
 
 /** Tell the responder(s) a request arrived. No addresses in the notice. Offer requests on partners without
@@ -64,6 +74,10 @@ export async function notifyResponder(kind: RequestKind, id: string): Promise<vo
       if (to.length) msg = newRequestEmail({ ownerEmail: to[0], ideaName: p.subject_title, requesterName: p.requester_name, message: p.message, requestId: id });
     } else if (kind === "help") {
       if (to.length) msg = helpOfferNoticeEmail({ to, ideaName: p.subject_title, needTitle: p.context, helperName: p.requester_name, onBehalfOf: p.extra, message: p.message, url });
+    } else if (kind === "mentorship") {
+      if (to.length) msg = mentorshipNoticeEmail({ to, menteeName: p.requester_name, ideaName: p.context, message: p.message, url });
+    } else if (kind === "investor") {
+      if (to.length) msg = investorInterestNoticeEmail({ to, ideaName: p.subject_title, investorName: p.requester_name, investorType: label(INVESTOR_TYPES, p.context ?? "other"), organization: p.extra, message: p.message, url });
     } else if (Number(p.contact_count) === 0) {
       msg = offerRequestNoticeEmail({ to: [adminNotifyAddress()], offerTitle: p.subject_title, partnerName: p.context, requesterName: "", message: "", url: `${SITE_URL}/admin/partners#offer-requests`, forAdmin: true });
     } else if (to.length) {
@@ -98,6 +112,24 @@ function introFor(kind: RequestKind, p: Row): EmailMessage | null {
       message: p.message, url: `${SITE_URL}${p.href}`,
     });
   }
+  if (kind === "mentorship") {
+    if (!p.responder_email) return null;
+    return requestIntroEmail({
+      a: { email: p.responder_email, name: p.responder_name }, b: { email: p.requester_email, name: p.requester_name },
+      subject: "PANA introduction: mentorship",
+      opening: `${p.responder_name} accepted ${p.requester_name}'s mentorship request${p.context ? ` for "${p.context}"` : ""}. Here are your email addresses so you can agree how and when to meet. Mentoring on PANA is volunteer and unpaid. ${NOT_VETTED}`,
+      message: p.message, url: `${SITE_URL}${p.href}`,
+    });
+  }
+  if (kind === "investor") {
+    if (!p.responder_email) return null;
+    return requestIntroEmail({
+      a: { email: p.responder_email, name: p.responder_name }, b: { email: p.requester_email, name: p.requester_name },
+      subject: `PANA introduction: investor interest in "${p.subject_title}"`,
+      opening: `${p.responder_name} accepted ${p.requester_name}'s interest in "${p.subject_title}". Here are your email addresses so you can talk directly. ${NOT_VETTED} Do your own checks before sharing confidential information or agreeing to anything.`,
+      message: p.message, url: `${SITE_URL}${p.href}`,
+    });
+  }
   // offer: the accepting partner contact, or PANA (admin inbox) when the admin accepted
   const responder = p.responder_email ? { email: p.responder_email as string, name: p.responder_name as string } : { email: adminNotifyAddress(), name: "PANA" };
   return requestIntroEmail({
@@ -125,6 +157,10 @@ async function sendDecline(kind: RequestKind, id: string): Promise<void> {
   if (!p?.requester_email) return;
   const msg = kind === "collab"
     ? declinedEmail({ requesterEmail: p.requester_email, ideaName: p.subject_title })
+    : kind === "mentorship"
+      ? requestDeclinedEmail({ to: p.requester_email, subject: "Update on your mentorship request", line: `${p.responder_name} can't take on your mentorship request right now. Other mentors may be a good fit.`, nextUrl: `${SITE_URL}/mentors` })
+    : kind === "investor"
+      ? requestDeclinedEmail({ to: p.requester_email, subject: `Update on your interest in "${p.subject_title}"`, line: `The owner of "${p.subject_title}" isn't taking up investor conversations right now.`, nextUrl: `${SITE_URL}/ideas?open_to_investment=1` })
     : kind === "help"
       ? requestDeclinedEmail({ to: p.requester_email, subject: `Update on your offer to help`, line: `Thanks for offering to help with "${p.context}". The idea owner isn't taking up the offer right now.`, nextUrl: `${SITE_URL}/ideas` })
       : requestDeclinedEmail({ to: p.requester_email, subject: `Update on your request for "${p.subject_title}"`, line: `Your request for "${p.subject_title}" (${p.context}) wasn't accepted this time.`, nextUrl: `${SITE_URL}/incubator/resources` });

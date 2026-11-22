@@ -8,6 +8,7 @@ import { REPORT_REASONS } from "@/lib/profile-input";
 import { toIdeaView, toProfileView } from "@/lib/visibility";
 import { ProfileDetails } from "@/components/ProfileView";
 import { reportProfileAction } from "../actions";
+import { badgesOf } from "@/lib/mentors-repo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Member", robots: { index: false, follow: false } };
@@ -30,6 +31,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
   const p = row ? toProfileView(ctx, row) : null;
   if (!p) notFound();
   const ideas = (await ideasOf(id)).map((i) => toIdeaView(ctx, i)).filter((i) => i !== null);
+  const badges = await badgesOf(id).catch(() => ({ mentor: false, investor: false }));
   const inp = "rounded-lg border border-white/10 bg-black px-3 py-2 text-sm";
 
   return (
@@ -44,6 +46,12 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
       )}
 
       <ProfileDetails p={p} />
+      {(badges.mentor || badges.investor) && (
+        <div className="mt-6 flex flex-wrap gap-2" aria-label="PANA badges">
+          {badges.mentor && <Link href={`/mentors/${p.user_id}`} className="rounded-full bg-green-500/15 px-3 py-1 text-sm text-green-300 hover:bg-green-500/25">PANA mentor →</Link>}
+          {badges.investor && <span className="rounded-full bg-green-500/15 px-3 py-1 text-sm text-green-300" title="Approved by PANA to send interest to ideas that are open to it. PANA doesn't vet investors.">PANA-approved investor</span>}
+        </div>
+      )}
 
       <section className="mt-12">
         <h2 className="mb-4 text-2xl font-semibold">Ideas & projects</h2>

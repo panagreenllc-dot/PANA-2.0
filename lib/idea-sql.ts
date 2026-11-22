@@ -9,7 +9,8 @@ export const IDEA_COLS = `
 /**
  * Browse approved, visible ideas.
  * $1 viewer is a gated member (bool), $2 category|null, $3 kind|null, $4 stage|null, $5 help|null,
- * $6 q ('' = none), $7 like pattern, $8 limit, $9 offset.
+ * $6 q ('' = none), $7 like pattern, $8 limit, $9 offset, $10 has open needs (bool),
+ * $11 open to investor interest (bool; the page only passes true for approved investors and admins).
  * Text search only matches fields that are visible to this viewer.
  */
 export const BROWSE_SQL = `
@@ -28,6 +29,7 @@ export const BROWSE_SQL = `
              OR (coalesce(p.field_visibility->>'details', 'members') = 'members' AND $1::boolean))))
     AND (NOT $10::boolean OR EXISTS (SELECT 1 FROM project_needs n
          WHERE n.project_id = p.id AND n.owner_user_id = p.user_id AND n.status = 'open'))
+    AND (NOT coalesce($11::boolean, false) OR p.investor_interest_open)
   ORDER BY p.created_at DESC
   LIMIT $8 OFFSET $9`;
 

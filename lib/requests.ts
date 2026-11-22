@@ -1,11 +1,11 @@
 // Shared request + introduction rules for every brokered request on PANA (unit-tested, pure).
 // Kinds: collaboration requests on ideas, help offers on needs, and "Request through PANA" offer requests.
-// P3-3 adds mentorship and investor requests here. The flow is always the same:
+// plus (P3-3) mentorship requests to approved mentors and investor interest on ideas open to it. The flow is always the same:
 //   someone sends a short note (no contact details) → the responder accepts or declines →
 //   only on accept does PANA send ONE introduction email that shares both addresses. Nothing is shown on the site.
 import { containsContactInfo } from "@/lib/profile-input";
 
-export const REQUEST_KINDS = ["collab", "help", "offer"] as const;
+export const REQUEST_KINDS = ["collab", "help", "offer", "mentorship", "investor"] as const;
 export type RequestKind = (typeof REQUEST_KINDS)[number];
 
 export const REQUEST_EXPIRY_DAYS = 30;
@@ -16,6 +16,8 @@ export const KIND_INFO: Record<RequestKind, { label: string; plural: string; pat
   collab: { label: "Collaboration request", plural: "Collaboration", path: (id) => `/me/requests/${id}`, prompt: "what you can offer" },
   help: { label: "Help offer", plural: "Help offers", path: (id) => `/me/requests/help/${id}`, prompt: "how you can help" },
   offer: { label: "Offer request", plural: "Offer requests", path: (id) => `/me/requests/offers/${id}`, prompt: "what you'd like to use and when" },
+  mentorship: { label: "Mentorship request", plural: "Mentorship", path: (id) => `/me/requests/mentorship/${id}`, prompt: "what you'd like help with" },
+  investor: { label: "Investor interest", plural: "Investor interest", path: (id) => `/me/requests/investor/${id}`, prompt: "why this idea interests you" },
 };
 
 export const isRequestKind = (v: unknown): v is RequestKind => typeof v === "string" && (REQUEST_KINDS as readonly string[]).includes(v);
@@ -44,6 +46,8 @@ export type SendCheck = { ok: true } | { ok: false; reason: SendReason };
 export function canSend(input: {
   viewerGated: boolean; viewerId: string | null; responderIds: (string | null)[]; targetOpen: boolean;
   eligible?: boolean; sentLast24h: number; hasOpenRequest: boolean;
+  /** Optional per-kind cap (e.g. 5 mentorship requests a day), checked on top of the shared daily limit. */
+  kindSentLast24h?: number; kindLimit?: number;
 }): SendCheck {
   if (!input.viewerGated || !input.viewerId) return { ok: false, reason: "not_member" };
   if (input.responderIds.includes(input.viewerId)) return { ok: false, reason: "own" };
@@ -51,6 +55,7 @@ export function canSend(input: {
   if (input.eligible === false) return { ok: false, reason: "not_eligible" };
   if (input.hasOpenRequest) return { ok: false, reason: "already_open" };
   if (input.sentLast24h >= MAX_REQUESTS_PER_DAY) return { ok: false, reason: "rate_limited" };
+  if (input.kindLimit !== undefined && (input.kindSentLast24h ?? 0) >= input.kindLimit) return { ok: false, reason: "rate_limited" };
   return { ok: true };
 }
 

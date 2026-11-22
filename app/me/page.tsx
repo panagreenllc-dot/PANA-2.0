@@ -188,6 +188,19 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         </ul>
       </section>
 
+      <section id="mentoring" className={card}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Mentors &amp; investors</h2>
+            <p className="text-sm text-gray-400">Find a volunteer mentor, or apply to mentor or to hear from ideas open to investor interest.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/mentors" className="rounded-xl bg-green-500 px-4 py-2 text-sm font-semibold text-black hover:bg-green-400">Find a mentor</Link>
+            <Link href="/me/profile#mentor" className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white hover:text-black">Mentor or investor settings</Link>
+          </div>
+        </div>
+      </section>
+
       {partners.length > 0 && (
         <section id="partner" className={card}>
           <div className="flex flex-wrap items-center justify-between gap-3">

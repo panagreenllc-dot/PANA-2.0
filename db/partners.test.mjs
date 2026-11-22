@@ -52,11 +52,11 @@ test("010 is additive: applies on top of 001-009 and leaves domino_* and incubat
     `SELECT conrelid::regclass::text AS t, conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
      WHERE conrelid::regclass::text LIKE 'domino_%' OR conrelid::regclass::text IN ('incubator_cohorts', 'incubator_applications', 'reports') ORDER BY 1, 2`));
   const before = [await shape(), await cons()];
-  await runMigrations(d, loadMigrations(), { log: () => {} });
+  await runMigrations(d, loadMigrations().filter((m) => m.version <= "010"), { log: () => {} });
   assert.deepEqual([await shape(), await cons()], before);
   const tables = (await d.query("SELECT table_name FROM information_schema.tables WHERE table_name IN ('partners','partner_inquiries','resource_offers','incubator_credentials') ORDER BY 1")).map((r) => r.table_name);
   assert.deepEqual(tables, ["incubator_credentials", "partner_inquiries", "partners", "resource_offers"]);
-  assert.deepEqual(await runMigrations(d, loadMigrations(), { log: () => {} }), [], "idempotent");
+  assert.deepEqual(await runMigrations(d, loadMigrations().filter((m) => m.version <= "010"), { log: () => {} }), [], "idempotent");
   await pg.close();
 });
 

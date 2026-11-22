@@ -8,6 +8,7 @@ import * as R from "@/lib/requests-repo";
 import { expiresOn, KIND_INFO, sideOf, type RequestKind } from "@/lib/requests";
 import ConfirmButton from "@/components/ConfirmButton";
 import { respondAction, retryIntroAction, withdrawRequestAction } from "@/app/me/actions";
+import { INVESTOR_TYPES, label } from "@/lib/mentors";
 
 const NOTICES: Record<string, string> = {
   "intro-sent": "Accepted. We've emailed you both an introduction.",
@@ -43,6 +44,8 @@ export default async function RequestDetail({ kind, id, notice }: { kind: Reques
         {kind === "help" ? <>Help with &ldquo;{r.context}&rdquo;</> : <Link href={r.subject_href} className="hover:text-green-300">{r.subject_title}</Link>}
       </h1>
       {kind === "help" && <p className="mb-1 text-gray-400">On <Link href={`${r.subject_href}#needs`} className="text-green-400 underline">{r.subject_title}</Link></p>}
+      {kind === "mentorship" && r.context && r.extra && <p className="mb-1 text-gray-400">About the idea <Link href={r.extra} className="text-green-400 underline">{r.context}</Link></p>}
+      {kind === "investor" && <p className="mb-1 text-gray-400">Investor interest from a PANA-approved investor · {label(INVESTOR_TYPES, r.context ?? "other")}{r.extra ? ` · ${r.extra}` : ""}</p>}
       {kind === "offer" && <p className="mb-1 text-gray-400">Offered by <Link href={r.subject_href} className="text-green-400 underline">{r.context}</Link>{r.extra ? <> · for the idea &ldquo;{r.extra}&rdquo;</> : null}</p>}
       <p className="mb-6 text-gray-400">
         {side === "sent"
@@ -76,7 +79,8 @@ export default async function RequestDetail({ kind, id, notice }: { kind: Reques
           : <div className="space-y-3"><p className="text-yellow-200">The introduction email hasn&apos;t been delivered yet.</p>
               {canRespond && <form action={retryIntroAction}>{hidden}<button className="rounded-lg border border-white/20 px-4 py-2 text-sm">Retry introduction email</button></form>}</div>
       )}
-      <p className="mt-10 text-xs text-gray-500">Email addresses are never shown on PANA. They&apos;re shared only in the introduction email after a request is accepted. PANA doesn&apos;t give money or equipment; it connects people.</p>
+      <p className="mt-10 text-xs text-gray-500">Email addresses are never shown on PANA. They&apos;re shared only in the introduction email after a request is accepted. PANA doesn&apos;t give money or equipment; it connects people.
+        {(kind === "mentorship" || kind === "investor") && <> PANA doesn&apos;t vet mentors or investors, doesn&apos;t give investment advice, and doesn&apos;t take part in any deal or agreement between members.</>}</p>
     </main>
   );
 }

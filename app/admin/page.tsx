@@ -9,6 +9,7 @@ import { NEED_KINDS } from "@/lib/needs";
 import Link from "next/link";
 import { pendingApplications } from "@/lib/incubator-repo";
 import { partnerTodo } from "@/lib/partners-repo";
+import { adminPendingCount } from "@/lib/mentors-repo";
 
 export default async function PendingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   // Auth check must run here, not only in the layout: Next renders layout and page in parallel.
@@ -20,6 +21,7 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
 
   const apps = await pendingApplications().catch(() => 0);
   const partnerItems = await partnerTodo().catch(() => 0);
+  const roleItems = await adminPendingCount().catch(() => 0);
   const needs = await pendingNeeds().catch((e) => { console.error("pendingNeeds failed", e); return []; });
   const needKind = (k: string) => NEED_KINDS.find((x) => x.value === k)?.label ?? k;
 
@@ -34,6 +36,11 @@ export default async function PendingPage({ searchParams }: { searchParams: Prom
       {partnerItems > 0 && (
         <p className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
           {partnerItems} partner item{partnerItems === 1 ? "" : "s"} waiting (inquiries, partners, offers, listing changes or offer requests). <Link href="/admin/partners" className="underline">Open the Partners tab</Link>
+        </p>
+      )}
+      {roleItems > 0 && (
+        <p className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          {roleItems} mentor/investor application{roleItems === 1 ? "" : "s"} waiting. <Link href="/admin/mentors" className="underline">Open the Mentors &amp; Investors tab</Link>
         </p>
       )}
       <h2 className="mb-4 text-xl font-semibold">Pending review ({projects.length})</h2>
