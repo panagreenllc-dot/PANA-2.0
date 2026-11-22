@@ -47,10 +47,10 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 |---|------|-----------------------|----|-------|
 | 001 | 001_moderation.sql | before 2026-10-18 | owner (Neon SQL Editor) | status/user_id/review columns |
 | 002–005 | members/audit, profiles/reports, ideas v2, collaboration | 2026-10-19 16:40 EDT | runner `--allow-production` (owner approved in writing) | Phase 2 PR 1. Backup taken first (logical JSON dump, LSN 0/6524B60) |
-| 006 | 006_collab_delivery.sql | with Phase 2 PR 3 (PR #6, merged Oct 2026); exact time not logged here | not recorded | Collaboration delivery columns + browse index. The live site depends on these columns. **Confirm the timestamp** with `SELECT version, applied_at FROM schema_migrations ORDER BY version;` and replace this note. |
-| 007 | 007_blank_legacy_project_emails.sql | with Phase 2 PR 3 (PR #6, merged Oct 2026); exact time not logged here | not recorded | Blanked legacy `projects.email` copies (0 rows at the time). Confirm the timestamp as for 006. |
+| 006 | 006_collab_delivery.sql | 2026-10-19 19:39 EDT (from `schema_migrations`) | runner `--allow-production` | Collaboration delivery columns + browse index (Phase 2 PR #6). |
+| 007 | 007_blank_legacy_project_emails.sql | 2026-10-19 19:39 EDT (from `schema_migrations`) | runner `--allow-production` | Blanked legacy `projects.email` copies (0 rows at the time). |
 | 008 | domino_* tables (PANA Domino Royale Phase 1) | 2026-10-21 16:56 EDT | runner `runMigrations` over Neon WebSocket/HTTPS (port 5432 blocked from the box), owner approved in writing 2026-10-21 16:52 EDT | Backup first: `pana-prod-pre-008-20261021-205302.json` (LSN 0/6BFF9F8). Existing data verified identical afterwards. |
-| 009 | 009_incubator.sql (Phase 3 P3-1) | **not yet: waiting for John's OK** | — | Preview branch only so far. Additive: `incubator_cohorts`, `incubator_applications`; no change to existing or `domino_*` tables. |
+| 009 | 009_incubator.sql (Phase 3 P3-1, PR #9) | 2026-11-22 12:20 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("merge it") | Backup first: `pana-prod-pre-009-20261122-172023.json` (logical JSON dump, LSN 0/DD49D60, taken 12:20 PM EST). Dry run showed only 009 pending. Existing tables, columns and data (incl. `domino_*`) verified identical afterwards. Additive: `incubator_cohorts`, `incubator_applications`. |
 
 ## Preview seed (`db/seed-preview.mjs`)
 `npm run build` also runs `node db/seed-preview.mjs`, with the same guard as the runner: it only acts on a Vercel Preview
