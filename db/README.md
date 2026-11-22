@@ -72,3 +72,11 @@ test address (like `+clerk_test`) to a preview's `ADMIN_EMAILS` on a deployment 
 Badge QR codes are derived as HMAC-SHA256(`BADGE_TOKEN_SECRET`, nonce); the database stores only the nonce and a
 SHA-256 hash of the code, never the code itself. Set it per environment as a Sensitive env var (e.g. `openssl rand -base64 48`).
 Without it badges are simply switched off. Changing it invalidates every printed badge (members can open /me/badge for a new one).
+
+## Requests and introductions (`lib/requests*.ts`, P3-2b)
+Collaboration requests, help offers on needs, and "Request through PANA" offer requests share one flow: a short note with
+no contact details → the responder accepts or declines (30-day expiry, 10 requests/day across all kinds) → on accept,
+ONE introduction email shares both addresses. Rules are in `lib/requests.ts` (pure), SQL in `lib/requests-sql.ts`
+(PGlite-tested in `db/needs.test.mjs`), delivery in `lib/requests-repo.ts`. List/detail queries never select an email;
+only the `PARTIES_SQL` queries do, for the notice and the introduction. Offer requests on a partner with no linked
+contacts are answered by PANA (admin), and the introduction then goes to the PANA inbox (`ADMIN_NOTIFY_EMAIL`).
