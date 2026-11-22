@@ -9,9 +9,9 @@ export default function MentorshipForm({ action, ideas }: { action: (s: Mentorsh
   const [state, formAction, pending] = useActionState(action, {});
   if (state.ok) return <p role="status" className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">Request sent. The mentor will be notified. If they accept, PANA will introduce you both by email.</p>;
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} key={state.n ?? 0} className="space-y-3">
       <label className="block text-sm text-gray-300">What would you like help with? <span className="text-gray-500">({MESSAGE_LIMITS[0]}–{MESSAGE_LIMITS[1]} characters, no contact details)</span>
-        <textarea name="message" required minLength={MESSAGE_LIMITS[0]} maxLength={MESSAGE_LIMITS[1]} rows={4} className={inp}
+        <textarea name="message" required minLength={MESSAGE_LIMITS[0]} maxLength={MESSAGE_LIMITS[1]} rows={4} defaultValue={state.message ?? ""} className={inp}
           placeholder="e.g. I'm building a tutoring app and would love advice on finding my first users." />
       </label>
       {ideas.length > 0 && (

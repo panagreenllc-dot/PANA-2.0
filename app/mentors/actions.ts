@@ -11,13 +11,14 @@ import { mentorOne, reportRole } from "@/lib/mentors-repo";
 import { parseReport } from "@/lib/profile-input";
 import * as R from "@/lib/requests-repo";
 
-export type MentorshipState = { ok?: boolean; error?: string };
+export type MentorshipState = { ok?: boolean; error?: string; message?: string; n?: number };
 
-export async function requestMentorshipAction(mentorId: string, _prev: MentorshipState, fd: FormData): Promise<MentorshipState> {
-  if (!isClerkUserId(mentorId)) return { error: "Mentor not found." };
+export async function requestMentorshipAction(mentorId: string, prev: MentorshipState, fd: FormData): Promise<MentorshipState> {
+  const fail = (error: string) => ({ error, message: String(fd.get("message") ?? ""), n: (prev.n ?? 0) + 1 });
+  if (!isClerkUserId(mentorId)) return fail("Mentor not found.");
   const ctx = await phase3Ctx(`/mentors/${mentorId}`);
   const parsed = parseRequestMessage(fd, "mentorship");
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return fail(parsed.error);
   const m = await mentorOne(mentorId);
   const projectId = String(fd.get("project_id") ?? "");
   await R.expireAll();
@@ -27,9 +28,9 @@ export async function requestMentorshipAction(mentorId: string, _prev: Mentorshi
     sentLast24h: await R.sentLastDayAll(ctx.userId), hasOpenRequest: await R.hasOpen("mentorship", mentorId, ctx.userId),
     kindSentLast24h: await R.sentLastDayKind("mentorship", ctx.userId), kindLimit: MENTORSHIP_PER_DAY,
   });
-  if (!check.ok) return { error: check.reason === "not_visible" ? "This mentor isn't taking new requests right now." : SEND_ERRORS[check.reason] };
+  if (!check.ok) return fail(check.reason === "not_visible" ? "This mentor isn't taking new requests right now." : SEND_ERRORS[check.reason]);
   const id = await R.createMentorshipRequest(mentorId, ctx.userId, parsed.message, /^[0-9a-f-]{36}$/i.test(projectId) ? projectId.toLowerCase() : null);
-  if (!id) return { error: "This mentor isn't taking new requests right now." };
+  if (!id) return fail("This mentor isn't taking new requests right now.");
   await R.notifyResponder("mentorship", id);
   revalidatePath(`/mentors/${mentorId}`);
   revalidatePath("/me");

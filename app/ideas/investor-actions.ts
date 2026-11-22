@@ -12,7 +12,7 @@ import { getIdea } from "@/lib/ideas-repo";
 import { isApprovedInvestor, setInvestorOpen } from "@/lib/mentors-repo";
 import * as R from "@/lib/requests-repo";
 
-export type InterestState = { ok?: boolean; error?: string };
+export type InterestState = { ok?: boolean; error?: string; message?: string; n?: number };
 
 export async function setInvestorOpenAction(fd: FormData) {
   const id = parseProjectId(fd.get("id"));
@@ -25,15 +25,16 @@ export async function setInvestorOpenAction(fd: FormData) {
   redirect(`/ideas/${id}?notice=${ok ? (open ? "investors-on" : "investors-off") : "investors-denied"}#investors`);
 }
 
-export async function investorInterestAction(rawIdeaId: string, _prev: InterestState, fd: FormData): Promise<InterestState> {
+export async function investorInterestAction(rawIdeaId: string, prev: InterestState, fd: FormData): Promise<InterestState> {
+  const fail = (error: string) => ({ error, message: String(fd.get("message") ?? ""), n: (prev.n ?? 0) + 1 });
   const id = parseProjectId(rawIdeaId);
-  if (!id) return { error: "Idea not found." };
+  if (!id) return fail("Idea not found.");
   const ctx = await phase3Ctx(`/ideas/${id}`);
   const parsed = parseRequestMessage(fd, "investor");
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return fail(parsed.error);
   const idea = await getIdea(id);
-  if (!idea) return { error: "Idea not found." };
-  if (!(await isApprovedInvestor(ctx.userId))) return { error: "Only PANA-approved investors can send investor interest. Apply from your profile." };
+  if (!idea) return fail("Idea not found.");
+  if (!(await isApprovedInvestor(ctx.userId))) return fail("Only PANA-approved investors can send investor interest. Apply from your profile.");
   await R.expireAll();
   // Judge visibility as an ordinary member, so admins can't reach hidden or private ideas this way.
   const asMember = { ...ctx, isAdmin: false };
@@ -43,9 +44,9 @@ export async function investorInterestAction(rawIdeaId: string, _prev: InterestS
     sentLast24h: await R.sentLastDayAll(ctx.userId), hasOpenRequest: await R.hasOpen("investor", id, ctx.userId),
     kindSentLast24h: await R.sentLastDayKind("investor", ctx.userId), kindLimit: INVESTOR_INTEREST_PER_DAY,
   });
-  if (!check.ok) return { error: check.reason === "not_visible" ? "This idea isn't open to investor interest right now." : SEND_ERRORS[check.reason] };
+  if (!check.ok) return fail(check.reason === "not_visible" ? "This idea isn't open to investor interest right now." : SEND_ERRORS[check.reason]);
   const rid = await R.createInvestorInterest(id, ctx.userId, parsed.message);
-  if (!rid) return { error: "This idea isn't open to investor interest right now." };
+  if (!rid) return fail("This idea isn't open to investor interest right now.");
   await R.notifyResponder("investor", rid);
   revalidatePath(`/ideas/${id}`);
   revalidatePath("/me");
