@@ -80,3 +80,13 @@ ONE introduction email shares both addresses. Rules are in `lib/requests.ts` (pu
 (PGlite-tested in `db/needs.test.mjs`), delivery in `lib/requests-repo.ts`. List/detail queries never select an email;
 only the `PARTIES_SQL` queries do, for the notice and the introduction. Offer requests on a partner with no linked
 contacts are answered by PANA (admin), and the introduction then goes to the PANA inbox (`ADMIN_NOTIFY_EMAIL`).
+
+P3-3 adds two kinds to the same flow: **mentorship requests** (mentee → an approved mentor; max 5/day, and a mentor's
+`max_open_mentees` caps pending + accepted-in-the-last-90-days requests) and **investor interest** (an approved investor →
+the owner of an idea with `projects.investor_interest_open = true`; max 10/day). Both also count toward the shared 10/day.
+Mentor/investor roles live in `mentor_profiles` / `investor_profiles` (SQL in `lib/mentors-sql.ts`, PGlite-tested in
+`db/mentors.test.mjs`); John approves, declines or revokes each one in Admin → Mentors & Investors (audited).
+
+**012 (`012_mentors_investors.sql`) is NOT on production yet.** It runs only on the PR's Neon preview branch (via the
+`--preview-build` guard). Production needs John's written OK, a backup, a dry run showing only 012, then the apply, before
+the PR is merged (the new pages read the new tables).

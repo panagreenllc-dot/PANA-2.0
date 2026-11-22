@@ -13,10 +13,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const reports = await sql`
     SELECT r.id, r.target_type, r.target_id, r.reason, r.details, r.created_at,
            p.display_name, p.moderation, p.hidden_reason, p.is_published,
-           pr.project_name, pr.hidden_by_reports, pr.status AS idea_status,
+           pr.project_name, pr.hidden_by_reports, pr.status AS idea_status, mn.mentor_name,
            (SELECT count(*)::int FROM reports r2 WHERE r2.target_type = r.target_type AND r2.target_id = r.target_id AND r2.status = 'open') AS open_count
     FROM reports r LEFT JOIN profiles p ON r.target_type = 'profile' AND p.user_id = r.target_id
     LEFT JOIN projects pr ON r.target_type = 'idea' AND pr.id::text = r.target_id
+    LEFT JOIN LATERAL (SELECT coalesce(mp2.display_name, mm.display_name) AS mentor_name FROM members mm LEFT JOIN profiles mp2 ON mp2.user_id = mm.user_id
+                       WHERE r.target_type IN ('mentor_profile', 'investor_profile') AND mm.user_id = r.target_id) mn ON true
     WHERE r.status = 'open' ORDER BY r.created_at ASC LIMIT 200`;
   const reasonLabel = (v: string) => REPORT_REASONS.find((r) => r.value === v)?.label ?? v;
   const btn = "rounded-lg border px-3 py-1.5 text-xs font-semibold";
@@ -39,6 +41,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                       <Link href={`/members/${r.target_id}`} className="underline">{r.display_name ?? r.target_id}</Link>
                     ) : r.target_type === "idea" ? (
                       <Link href={`/ideas/${r.target_id}`} className="underline">{r.project_name ?? r.target_id}</Link>
+                    ) : r.target_type === "mentor_profile" ? (
+                      <><Link href={`/mentors/${r.target_id}`} className="underline">Mentor: {r.mentor_name ?? r.target_id}</Link>{" "}
+                        <Link href="/admin/mentors#approved" className="ml-2 text-xs font-normal text-gray-400 underline">Manage in Mentors &amp; Investors</Link></>
                     ) : r.target_id}
                     {r.hidden_by_reports && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden</span>}
                     {r.moderation === "hidden" && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden{r.hidden_reason ? `: ${r.hidden_reason}` : ""}</span>}

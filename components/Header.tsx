@@ -18,7 +18,9 @@ async function pendingCount(): Promise<number | null> {
     // Partner to-dos counted separately so a missing table never hides the rest.
     const partners = await partnerTodo().catch(() => 0);
     const needs = await sql`SELECT count(*)::int AS n FROM project_needs WHERE status = 'pending'`.then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
-    return base + partners + needs;
+    const roles = await sql`SELECT (SELECT count(*) FROM mentor_profiles WHERE status = 'pending') + (SELECT count(*) FROM investor_profiles WHERE status = 'pending') AS n`
+      .then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
+    return base + partners + needs + roles;
   } catch {
     return null;
   }

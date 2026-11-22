@@ -51,14 +51,14 @@ test("011 is additive: applies on top of 001-010, leaves domino_* and existing t
   const partnerCols = async () => (await d.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'partners' ORDER BY 1")).map((r) => r.column_name);
   const before = [await shape(), await cons()];
   const pBefore = await partnerCols();
-  await runMigrations(d, loadMigrations(), { log: () => {} });
+  await runMigrations(d, loadMigrations().filter((m) => m.version <= "011"), { log: () => {} });
   assert.deepEqual([await shape(), await cons()], before);
   assert.deepEqual((await partnerCols()).filter((c) => c !== "pending_changes"), pBefore);
   const [pc] = await d.query("SELECT is_nullable, column_default FROM information_schema.columns WHERE table_name = 'partners' AND column_name = 'pending_changes'");
   assert.deepEqual(pc, { is_nullable: "YES", column_default: null });
   const tables = (await d.query("SELECT table_name FROM information_schema.tables WHERE table_name IN ('project_needs','help_offers','offer_requests','partner_contacts') ORDER BY 1")).map((r) => r.table_name);
   assert.deepEqual(tables, ["help_offers", "offer_requests", "partner_contacts", "project_needs"]);
-  assert.deepEqual(await runMigrations(d, loadMigrations(), { log: () => {} }), [], "idempotent");
+  assert.deepEqual(await runMigrations(d, loadMigrations().filter((m) => m.version <= "011"), { log: () => {} }), [], "idempotent");
   const cols = (await d.query("SELECT table_name, column_name FROM information_schema.columns WHERE table_name IN ('project_needs','help_offers','offer_requests','partner_contacts')")).map((r) => r.column_name);
   assert.ok(!cols.filter((c) => c !== "intro_email_id").some((c) => /email|phone|price|dollar|grant/.test(c)), "no contact or money columns (intro_email_id is the provider message id)");
   await pg.close();
@@ -115,7 +115,7 @@ test("a need is never more visible than its idea: public lists, browse filter an
   for (const n of [nPub, nMem, nHid, nPen]) await approve(n);
   const support = (await d.query(N.PUBLIC_OPEN_NEEDS_SQL, [10])).map((r) => r.id);
   assert.deepEqual(support, [nPub], "only open needs on public, approved, visible ideas");
-  const browse = async (gated) => (await d.query(BROWSE_SQL, [gated, null, null, null, null, "", "%%", 24, 0, true])).map((r) => r.project_name).sort();
+  const browse = async (gated) => (await d.query(BROWSE_SQL, [gated, null, null, null, null, "", "%%", 24, 0, true, false])).map((r) => r.project_name).sort();
   assert.deepEqual(await browse(false), ["Public"]);
   assert.deepEqual(await browse(true), ["Members", "Public"]);
   // help offers only on open needs of approved, visible ideas

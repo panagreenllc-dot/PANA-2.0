@@ -5,6 +5,7 @@ import { getViewerCtx } from "@/lib/members";
 import { browseIdeas } from "@/lib/ideas-repo";
 import { CATEGORIES, HELP_NEEDED, KINDS, STAGES } from "@/lib/ideas";
 import { isGatedMember, toIdeaView } from "@/lib/visibility";
+import { isApprovedInvestor } from "@/lib/mentors-repo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Explore Ideas" };
@@ -14,6 +15,8 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const { ctx } = await getViewerCtx();
   const gated = isGatedMember(ctx);
+  // The investor filter is only for PANA-approved investors (and admins); everyone else never sees or uses it.
+  const investorView = gated && (ctx.isAdmin || (await isApprovedInvestor(ctx.userId).catch(() => false)));
   const pick = (v: string | undefined, list: readonly string[]) => (v && list.includes(v) ? v : undefined);
   const f = {
     category: pick(sp.category, CATEGORIES),
@@ -22,12 +25,13 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
     help: pick(sp.help, HELP_NEEDED.map((k) => k.value)),
     q: (sp.q ?? "").slice(0, 80),
     needs: sp.needs === "1" ? "1" : undefined,
+    open_to_investment: investorView && sp.open_to_investment === "1" ? "1" : undefined,
   };
   const page = Math.max(1, Number(sp.page) || 1);
   let rows: Awaited<ReturnType<typeof browseIdeas>>["rows"] = [];
   let total = 0;
   try {
-    ({ rows, total } = await browseIdeas(gated, { ...f, needs: f.needs === "1", limit: PAGE, offset: (page - 1) * PAGE }));
+    ({ rows, total } = await browseIdeas(gated, { ...f, needs: f.needs === "1", investable: f.open_to_investment === "1", limit: PAGE, offset: (page - 1) * PAGE }));
   } catch (e) {
     console.error("browseIdeas failed", e);
   }
@@ -62,6 +66,11 @@ export default async function IdeasPage({ searchParams }: { searchParams: Promis
         <label className="flex items-center gap-2 text-sm text-gray-300 lg:col-span-6">
           <input type="checkbox" name="needs" value="1" defaultChecked={f.needs === "1"} className="h-4 w-4 accent-green-500" /> Has open needs (ideas looking for help you could offer)
         </label>
+        {investorView && (
+          <label className="flex items-center gap-2 text-sm text-gray-300 lg:col-span-6">
+            <input type="checkbox" name="open_to_investment" value="1" defaultChecked={f.open_to_investment === "1"} className="h-4 w-4 accent-green-500" /> Open to investor interest (only you and other approved investors see this filter)
+          </label>
+        )}
       </form>
 
       {ideas.length === 0 ? (

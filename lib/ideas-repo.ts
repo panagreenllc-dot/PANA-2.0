@@ -9,19 +9,19 @@ import type { IdeaRow } from "@/lib/visibility";
 
 const q = (text: string, params: unknown[]) => raw().query(text, params) as Promise<Row[]>;
 
-export type BrowseFilters = { category?: string; kind?: string; stage?: string; help?: string; needs?: boolean; q?: string; limit?: number; offset?: number };
+export type BrowseFilters = { category?: string; kind?: string; stage?: string; help?: string; needs?: boolean; investable?: boolean; q?: string; limit?: number; offset?: number };
 
 export async function browseIdeas(viewerGated: boolean, f: BrowseFilters): Promise<{ rows: (IdeaRow & { name: string | null })[]; total: number }> {
   const text = (f.q ?? "").trim().slice(0, 80);
   const rows = await q(BROWSE_SQL, [viewerGated, f.category || null, f.kind || null, f.stage || null, f.help || null,
-    text, likePattern(text), Math.min(f.limit ?? 24, 50), Math.max(0, f.offset ?? 0), !!f.needs]);
+    text, likePattern(text), Math.min(f.limit ?? 24, 50), Math.max(0, f.offset ?? 0), !!f.needs, !!f.investable]);
   return { rows: rows as (IdeaRow & { name: string | null })[], total: (rows[0]?.total as number) ?? 0 };
 }
 
-export async function getIdea(id: string): Promise<(IdeaRow & { name: string | null; owner_edited_at: string | null; moderation_note: string | null }) | null> {
+export async function getIdea(id: string): Promise<(IdeaRow & { name: string | null; owner_edited_at: string | null; moderation_note: string | null; investor_interest_open?: boolean }) | null> {
   const rows = await sql`
     SELECT id, user_id, name, project_name, category, description, website, details, help_needed, kind, stage, status,
-           audience, field_visibility, hidden_by_reports, moderation_note, owner_edited_at, created_at, updated_at
+           audience, field_visibility, hidden_by_reports, moderation_note, owner_edited_at, investor_interest_open, created_at, updated_at
     FROM projects WHERE id::text = ${id}`;
   return (rows[0] as never) ?? null;
 }

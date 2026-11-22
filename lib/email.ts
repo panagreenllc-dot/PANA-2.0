@@ -245,3 +245,47 @@ export function adminPartnerUpdateEmail(p: { to: string; what: "offer" | "listin
     text: `A partner contact submitted ${p.what === "offer" ? "an offer" : "listing changes"} on PANA.\n\nReview in admin (sign in required): ${SITE_URL}/admin/partners\n\nThis notice has no details by design.`,
   };
 }
+
+// ---- Phase 3 / P3-3: mentors and investors ----
+// Same rule: notices never contain an address; only the accepted introduction shares both.
+
+export const NOT_VETTED = "PANA doesn't vet mentors or investors, doesn't give investment advice, and doesn't take part in any deal or agreement between members.";
+
+export function mentorshipNoticeEmail(p: { to: string[]; menteeName: string; ideaName: string | null; message: string; url: string }): EmailMessage {
+  return {
+    to: p.to,
+    subject: "New mentorship request on PANA",
+    text: `${p.menteeName} would like your mentorship${p.ideaName ? ` on their idea "${p.ideaName}"` : ""}.\n\nTheir note:\n"${p.message}"\n\nAccept or decline here: ${p.url}\n\nYour email address has not been shared. If you accept, PANA will introduce you both by email. Requests expire after 30 days. You can pause new requests any time from your profile.${FOOTER}`,
+  };
+}
+
+export function investorInterestNoticeEmail(p: { to: string[]; ideaName: string; investorName: string; investorType: string; organization: string | null; message: string; url: string }): EmailMessage {
+  return {
+    to: p.to,
+    subject: `An investor is interested in "${p.ideaName}"`,
+    text: `${p.investorName} (${p.investorType}${p.organization ? `, ${p.organization}` : ""}), a PANA-approved investor, is interested in your idea "${p.ideaName}".\n\nTheir note:\n"${p.message}"\n\nAccept or decline here: ${p.url}\n\nYour email address has not been shared. If you accept, PANA will introduce you both by email. ${NOT_VETTED} You can turn off investor interest on your idea's page.${FOOTER}`,
+  };
+}
+
+/** Result of John's review of a mentor/investor application. */
+export function roleDecisionEmail(p: { to: string; role: "mentor" | "investor"; decision: "approved" | "declined" | "revoked"; note: string | null }): EmailMessage {
+  const r = p.role === "mentor" ? "mentor" : "investor";
+  const note = p.note ? `\n\nNote from PANA:\n"${p.note}"` : "";
+  const text = p.decision === "approved"
+    ? (p.role === "mentor"
+      ? `You're now a PANA mentor. Your mentor badge is on your profile, and members can find you in the mentor directory and send mentorship requests. You'll get an email for each one and decide whether to accept.${note}\n\nManage it here: ${SITE_URL}/me/profile#mentor`
+      : `You're now a PANA-approved investor. A badge is on your profile, and you can say you're interested in ideas whose owners opened them to investor interest: ${SITE_URL}/ideas?open_to_investment=1\n\nOwners decide whether to be introduced. ${NOT_VETTED}${note}`)
+    : p.decision === "declined"
+      ? `Thanks for applying to be a PANA ${r}. We can't approve it right now.${note}\n\nYou can update it and re-apply: ${SITE_URL}/me/profile#${r}`
+      : `Your PANA ${r} badge has been removed.${note}\n\nQuestions? See how to contact PANA: ${SITE_URL}/terms`;
+  return { to: [p.to], subject: p.decision === "approved" ? `You're approved as a PANA ${r}` : `Update on your PANA ${r} application`, text: `${text}${FOOTER}` };
+}
+
+/** Link-only notice to the admin inbox. */
+export function adminNewRoleApplicationEmail(p: { to: string; role: "mentor" | "investor" }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: `New ${p.role} application on PANA`,
+    text: `A member applied (or updated their application) to be a PANA ${p.role}.\n\nReview in admin (sign in required): ${SITE_URL}/admin/mentors\n\nThis notice has no member details by design.`,
+  };
+}
