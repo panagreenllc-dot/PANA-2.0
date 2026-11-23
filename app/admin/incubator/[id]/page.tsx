@@ -47,12 +47,12 @@ export default async function AdminCohortPage({ params, searchParams }: {
           <div>
             <h2 className="text-2xl font-semibold">{cohort.name}</h2>
             <p className="text-sm text-gray-400">
-              {cohort.status} · public view: <strong>{phase}</strong> · {accepted}/{cohort.capacity} accepted
+              {cohort.status} · public view: <strong>{phase}</strong> · {accepted} accepted{cohort.capacity ? ` (soft limit ${cohort.capacity})` : " · no fixed number of spots"}
             </p>
             <p className="text-sm text-gray-400">
               Applications {formatDateTime(cohort.apply_opens_at) || "(no open time)"} – {formatDateTime(cohort.apply_closes_at) || "(no close time)"}
               {cohort.starts_on ? ` · Program ${formatDay(cohort.starts_on)} – ${formatDay(cohort.ends_on)}` : ""}
-              {cohort.announce_on ? ` · Decisions ${formatDay(cohort.announce_on)}` : ""}
+              {cohort.announce_on ? ` · Decisions emailed by ${formatDay(cohort.announce_on)}` : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -117,8 +117,8 @@ export default async function AdminCohortPage({ params, searchParams }: {
                           <input type="hidden" name="id" value={a.id} /><input type="hidden" name="cohort_id" value={cohort.id} />
                           <textarea name="note" maxLength={1000} rows={2} placeholder="Note to the applicant (optional, included in their email)" className="w-full rounded-lg border border-white/10 bg-black px-3 py-2 text-xs text-white" />
                           <textarea name="admin_note" maxLength={2000} rows={2} defaultValue={a.admin_note ?? ""} placeholder="Private admin note (never shown to the applicant)" className="w-full rounded-lg border border-white/10 bg-black px-3 py-2 text-xs text-white" />
-                          {accepted >= cohort.capacity && canDecide(a.status, "accepted") && (
-                            <label className="flex items-center gap-2 text-xs text-yellow-200"><input type="checkbox" name="over_capacity" className="accent-yellow-400" /> Cohort is full: accept over capacity</label>
+                          {cohort.capacity != null && accepted >= cohort.capacity && canDecide(a.status, "accepted") && (
+                            <label className="flex items-center gap-2 text-xs text-yellow-200"><input type="checkbox" name="over_capacity" className="accent-yellow-400" /> Soft limit reached: accept anyway</label>
                           )}
                           <div className="flex flex-wrap gap-2">
                             {canDecide(a.status, "accepted") && <button formAction={acceptApplicationAction} className={`${btn} border-green-500/50 bg-green-500 text-black`}>Accept</button>}

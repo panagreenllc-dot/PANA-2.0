@@ -1,44 +1,40 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import EventDetails from "@/components/EventDetails";
+import { agendaOf, speakersOf, techcon, type FeedPost } from "@/lib/community-repo";
 
 export const metadata: Metadata = {
   title: "Treasure Coast Tech Con",
-  description: "PANA Tech Con — talks, startup showcases and pitches on the Treasure Coast, Florida.",
+  description: "Treasure Coast Tech Con, Sunday, May 30, 2027 in Fort Pierce: talks, startup showcases and pitches on the Treasure Coast, Florida.",
 };
 
-// ---------------------------------------------------------------------------
-// PLACEHOLDERS — replace with real event details before launch.
-// ---------------------------------------------------------------------------
-const EVENT = {
-  date: "Sunday, February 21, 2027",
-  time: "Time TBA", // PLACEHOLDER e.g. "9:00 AM – 5:00 PM"
-  location: "Treasure Coast, Florida",
-  venue: "Havert L. Fenn Center",
-  address: "2000 Virginia Avenue, Fort Pierce, FL 34982",
-  registrationUrl: "", // PLACEHOLDER: paste the registration link (Eventbrite, Luma, etc.)
+// Tech Con reads its event, agenda and speakers from the database (Admin → Community), so John can change the time,
+// price, registration link and speakers without a code change. FALLBACK is used only if the database row is missing.
+export const dynamic = "force-dynamic";
+
+const FALLBACK: FeedPost = {
+  id: "", slug: "treasure-coast-tech-con-2027", kind: "event", program: "techcon", audience: "public", status: "published", pinned: true,
+  title: "Treasure Coast Tech Con 2027", body: "", starts_at: "2027-05-30T14:30:00Z", ends_at: "2027-05-30T21:00:00Z",
+  location_name: "Havert L. Fenn Center", address: "2000 Virginia Avenue, Fort Pierce, FL 34982", is_online: false,
+  registration_url: null, registration_note: "Registration opens soon", price_text: "To be announced", published_at: null, created_at: "", updated_at: "",
 };
+const FALLBACK_SPEAKERS = [{ name: "Professor Joseph Ali", role: "Keiser University · Guest speaker" }];
 
-const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-  `${EVENT.venue}, ${EVENT.address}`,
-)}`;
-
-const AGENDA: { time: string; title: string }[] = [
-  // PLACEHOLDER agenda — replace with the real schedule
-  { time: "TBA", title: "Doors open & check-in" },
-  { time: "TBA", title: "Opening keynote" },
-  { time: "TBA", title: "Startup showcase" },
-  { time: "TBA", title: "Founder pitch session" },
-  { time: "TBA", title: "Networking & close" },
+const PLACEHOLDER_AGENDA: { time_label: string; title: string }[] = [
+  { time_label: "TBA", title: "Doors open & check-in" },
+  { time_label: "TBA", title: "Opening keynote" },
+  { time_label: "TBA", title: "Startup showcase" },
+  { time_label: "TBA", title: "Founder pitch session" },
+  { time_label: "TBA", title: "Networking & close" },
 ];
 
-const SPEAKERS: { name: string; role: string }[] = [
-  // PLACEHOLDER — add confirmed speakers, e.g. { name: "Jane Doe", role: "Founder, Acme" }
-];
+const priceAnswer = (p: string | null) =>
+  !p || /to be announced|tbd|tba/i.test(p) ? "Pricing is to be announced. We'll post it here with registration." : /^free$/i.test(p.trim()) ? "Free." : p;
 
-const FAQ = [
+const faq = (price: string | null) => [
   { q: "Who should attend?", a: "Founders, developers, students, investors and anyone building in tech on the Treasure Coast." },
   { q: "How do I present my project?", a: "Submit your project and mention Tech Con in the description. Our team reviews every submission and will contact selected presenters." },
-  { q: "How much does it cost?", a: "Ticket details will be announced with registration." }, // PLACEHOLDER
+  { q: "How much does it cost?", a: priceAnswer(price) },
 ];
 
 const HIGHLIGHTS = [
@@ -48,7 +44,13 @@ const HIGHLIGHTS = [
   { title: "Networking", body: "Meet collaborators, hires and partners from across the region." },
 ];
 
-export default function TechConPage() {
+export default async function TechConPage() {
+  const row = await techcon().catch(() => null);
+  const EVENT = row ?? FALLBACK;
+  const [dbAgenda, dbSpeakers] = row ? await Promise.all([agendaOf(row.id).catch(() => []), speakersOf(row.id).catch(() => [])]) : [[], FALLBACK_SPEAKERS];
+  const AGENDA = dbAgenda.length ? dbAgenda : PLACEHOLDER_AGENDA;
+  const SPEAKERS = dbSpeakers;
+  const FAQ = faq(EVENT.price_text);
   return (
     <main>
       <section className="border-b border-white/10">
@@ -63,40 +65,10 @@ export default function TechConPage() {
             A one-day conference of talks, live demos and startup pitches connecting
             founders, engineers, students and investors.
           </p>
-          <dl className="mb-10 grid max-w-3xl gap-6 sm:grid-cols-3">
-            <div className="border-l border-green-400/50 pl-4">
-              <dt className="text-xs uppercase tracking-wider text-gray-500">Date</dt>
-              <dd className="mt-1 font-medium">{EVENT.date}</dd>
-            </div>
-            <div className="border-l border-green-400/50 pl-4">
-              <dt className="text-xs uppercase tracking-wider text-gray-500">Time</dt>
-              <dd className="mt-1 font-medium">{EVENT.time}</dd>
-            </div>
-            <div className="border-l border-green-400/50 pl-4">
-              <dt className="text-xs uppercase tracking-wider text-gray-500">Venue</dt>
-              <dd className="mt-1 font-medium">
-                <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-white/30 underline-offset-4 hover:text-green-300">
-                  {EVENT.venue}
-                </a>
-                <span className="mt-1 block text-sm font-normal text-gray-400">{EVENT.address}</span>
-                <span className="block text-sm font-normal text-gray-400">{EVENT.location}</span>
-              </dd>
-            </div>
-          </dl>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            {EVENT.registrationUrl ? (
-              <a href={EVENT.registrationUrl} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-500 px-6 py-3 text-center font-semibold text-black transition hover:bg-green-400">
-                Register
-              </a>
-            ) : (
-              <span className="cursor-not-allowed rounded-xl bg-green-500/40 px-6 py-3 text-center font-semibold text-black/70">
-                Registration opens soon
-              </span>
-            )}
+          <EventDetails e={EVENT} calendarHref={`/events/${EVENT.slug}/calendar`} extra={
             <Link href="/submit" className="rounded-xl border border-white/20 px-6 py-3 text-center font-semibold transition hover:bg-white hover:text-black">
               Apply to present
-            </Link>
-          </div>
+            </Link>} />
         </div>
       </section>
 
@@ -115,11 +87,11 @@ export default function TechConPage() {
       <section className="mx-auto grid max-w-6xl gap-16 px-6 pb-20 lg:grid-cols-2">
         <div>
           <h2 className="mb-2 text-2xl font-semibold">Agenda</h2>
-          <p className="mb-6 text-sm text-gray-500">Full schedule to be announced.</p>
+          {!dbAgenda.length && <p className="mb-6 text-sm text-gray-500">Full schedule to be announced.</p>}
           <ol className="divide-y divide-white/10 border-y border-white/10">
             {AGENDA.map((a, i) => (
               <li key={i} className="flex gap-6 py-4">
-                <span className="w-16 shrink-0 text-sm text-gray-500">{a.time}</span>
+                <span className="w-20 shrink-0 text-sm text-gray-500">{a.time_label}</span>
                 <span>{a.title}</span>
               </li>
             ))}
@@ -129,19 +101,20 @@ export default function TechConPage() {
           <h2 className="mb-2 text-2xl font-semibold">Speakers</h2>
           {SPEAKERS.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-white/15 p-8 text-gray-400">
-              Speakers will be announced soon. Interested in speaking?{" "}
+              More speakers will be announced soon. Interested in speaking?{" "}
               <Link href="/submit" className="text-green-400 hover:text-green-300">Apply to present</Link>.
             </p>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
               {SPEAKERS.map((s) => (
-                <li key={s.name} className="rounded-2xl border border-white/10 p-5">
+                <li key={s.name + s.role} className="rounded-2xl border border-white/10 p-5">
                   <p className="font-semibold">{s.name}</p>
                   <p className="text-sm text-gray-400">{s.role}</p>
                 </li>
               ))}
             </ul>
           )}
+          {SPEAKERS.length > 0 && <p className="mt-4 text-sm text-gray-500">More speakers to be announced.</p>}
         </div>
       </section>
 

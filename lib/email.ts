@@ -127,8 +127,8 @@ export function applicationDecisionEmail(p: { to: string; name: string; cohortNa
   }[p.decision];
   const body = {
     accepted: `Congratulations! You've been accepted into ${p.cohortName}.${p.startsText ? ` The program starts ${p.startsText}.` : ""} We'll be in touch with next steps.`,
-    waitlisted: `Your application for ${p.cohortName} is on the waitlist. If a spot opens up, we'll let you know.`,
-    declined: `Thank you for applying to ${p.cohortName}. We aren't able to offer you a spot this time, but we'd love to see you keep building with the community and apply again.`,
+    waitlisted: `Your application for ${p.cohortName} is on the waitlist. If there's room later, we'll let you know. In the meantime you're welcome in the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board) and find a volunteer mentor (${SITE_URL}/mentors).`,
+    declined: `Thank you for applying to ${p.cohortName}. We aren't able to place you in this cohort, but we'd love for you to stay part of the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board), find a volunteer mentor (${SITE_URL}/mentors), and apply again to a future cohort.`,
   }[p.decision];
   return {
     to: [p.to],
@@ -287,5 +287,35 @@ export function adminNewRoleApplicationEmail(p: { to: string; role: "mentor" | "
     to: [p.to],
     subject: `New ${p.role} application on PANA`,
     text: `A member applied (or updated their application) to be a PANA ${p.role}.\n\nReview in admin (sign in required): ${SITE_URL}/admin/mentors\n\nThis notice has no member details by design.`,
+  };
+}
+
+// ---------- Community (P3-4) ----------
+
+/** Link-only notice: a member's first board post or reply is waiting for review. No member content by design. */
+export function adminBoardReviewEmail(p: { to: string }): EmailMessage {
+  return {
+    to: [p.to],
+    subject: "A first community board post is waiting for review",
+    text: `A member's first post or reply on the PANA community board is waiting for your review.\n\nReview in admin (sign in required): ${SITE_URL}/admin/community\n\nThis notice has no member details by design.`,
+  };
+}
+
+export function boardDecisionEmail(p: { to: string; title: string; decision: "published" | "declined"; note: string | null; url: string }): EmailMessage {
+  const body = p.decision === "published"
+    ? `Your community board post "${p.title}" is live for PANA members: ${p.url}\n\nFrom now on, your posts and replies appear straight away.`
+    : `Thanks for posting on the PANA community board. Your post "${p.title}" wasn't approved this time.${p.note ? `\n\nA note from the PANA team:\n"${p.note}"` : ""}\n\nYou're welcome to post again: ${SITE_URL}/community/board`;
+  return { to: [p.to], subject: p.decision === "published" ? "Your community post is live" : "About your community post", text: `${body}${FOOTER}` };
+}
+
+export type DigestItem = { title: string; url: string; when?: string; summary?: string };
+
+/** The opt-in announcements & events digest (John's posts only, never member posts). */
+export function communityDigestEmail(p: { to: string; items: DigestItem[] }): EmailMessage {
+  const lines = p.items.map((i) => `• ${i.title}${i.when ? ` (${i.when})` : ""}\n  ${i.summary ? `${i.summary}\n  ` : ""}${i.url}`).join("\n\n");
+  return {
+    to: [p.to],
+    subject: "PANA community: announcements and upcoming events",
+    text: `Hi,\n\nHere's what's new in the PANA community:\n\n${lines}\n\nSee everything: ${SITE_URL}/community\n\nYou're getting this because you turned on the community digest (about twice a month at most). Turn it off any time: ${SITE_URL}/me#email${FOOTER}`,
   };
 }

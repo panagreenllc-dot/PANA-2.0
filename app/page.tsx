@@ -4,6 +4,8 @@ import { toIdeaView, type ViewerCtx } from "@/lib/visibility";
 
 const ANON: ViewerCtx = { userId: null, status: "anon", isAdmin: false };
 import ProjectCard from "@/components/ProjectCard";
+import { techcon } from "@/lib/community-repo";
+import { formatEventRange } from "@/lib/datetime";
 import { CardGrid, btnPrimary, btnSecondary } from "@/components/PageIntro";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +33,9 @@ const AUDIENCE = [
 ];
 
 export default async function Home() {
-  const ideas = await latestIdeas();
+  const [ideas, tc] = await Promise.all([latestIdeas(), techcon().catch(() => null)]);
+  // e.g. "May 30, 2027" from the Tech Con event in the database (Admin → Community); fallback if it's missing.
+  const techconDay = tc?.starts_at ? formatEventRange(tc.starts_at).day.replace(/^\w+, /, "") : "May 30, 2027";
 
   return (
     <main>
@@ -92,7 +96,7 @@ export default async function Home() {
         <div className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-white/10 bg-gradient-to-br from-green-500/10 to-transparent p-8 sm:flex-row sm:items-center">
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">Program · Treasure Coast Tech Con</p>
-            <h2 className="mb-2 text-2xl font-semibold">Talks, demos and pitches. February 21, 2027 in Fort Pierce</h2>
+            <h2 className="mb-2 text-2xl font-semibold">Talks, demos and pitches. {techconDay} in Fort Pierce</h2>
             <p className="max-w-xl text-sm text-gray-400">
               Our flagship in-person event brings the community together to showcase projects and meet mentors and investors.
             </p>

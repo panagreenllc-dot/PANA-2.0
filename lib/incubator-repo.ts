@@ -5,7 +5,7 @@ import {
   adminNewApplicationEmail, adminNotifyAddress, applicationDecisionEmail, applicationReceivedEmail, cohortOpenEmail, sendEmail,
 } from "@/lib/email";
 import { issueBadge, syncBadgeWithParticipant } from "@/lib/partners-repo";
-import type { ApplicationInput, CohortInput, Decision } from "@/lib/incubator";
+import { decisionText, type ApplicationInput, type CohortInput, type Decision } from "@/lib/incubator";
 import {
   ACCEPTED_COUNT_SQL, ADMIN_COHORTS_SQL, ADMIN_NOTE_SQL, ADMIN_QUEUE_SQL, APPLY_INSERT_SQL, COHORT_ACCEPTING_SQL, COHORT_COLS,
   DECIDE_SQL, DECISION_PARTIES_SQL, MY_APPLICATIONS_SQL, NOTIFY_TARGETS_SQL, PARTICIPANT_SQL, PENDING_APPLICATIONS_SQL,
@@ -39,10 +39,8 @@ export async function hasLiveApplication(cohortId: string, userId: string): Prom
   return r.length > 0;
 }
 
-export function announceText(c: { announce_on?: string | null; announce_note?: string | null }): string | undefined {
-  if (!c.announce_on && !c.announce_note) return undefined;
-  const when = c.announce_on ? formatDay(c.announce_on) : "";
-  return [c.announce_note, when && `(${when})`].filter(Boolean).join(" ") + ".";
+export function announceText(c: { announce_on?: string | null; announce_note?: string | null }): string {
+  return decisionText(c, formatDay);
 }
 
 const prefOn = (prefs: unknown, key: string) => (prefs as Record<string, unknown> | null)?.[key] !== false;

@@ -63,6 +63,7 @@ export async function emailPrefsAction(fd: FormData) {
   const prefs = {
     requests: fd.get("requests") === "on", reviews: fd.get("reviews") === "on",
     incubator: fd.get("incubator") === "on", incubator_news: fd.get("incubator_news") === "on",
+    community_digest: fd.get("community_digest") === "on",
   };
   // Merge so keys added later (or by other features) are never wiped.
   await sql`UPDATE members SET email_prefs = coalesce(email_prefs, '{}'::jsonb) || ${JSON.stringify(prefs)}::jsonb, updated_at = now()

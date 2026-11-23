@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { requireMember } from "@/lib/members";
 import { formatDateTime, formatDay } from "@/lib/datetime";
-import { cohortPhase, parseUuid } from "@/lib/incubator";
+import { cohortPhase, decisionText, parseUuid } from "@/lib/incubator";
 import { applicableIdeas, hasLiveApplication, publicCohorts } from "@/lib/incubator-repo";
 import ApplicationForm from "./ApplicationForm";
 
@@ -54,7 +54,7 @@ export default async function ApplyPage({ searchParams }: { searchParams: Promis
     <p className="mb-2 text-gray-400">
       Applications close {formatDateTime(cohort.apply_closes_at)}.
       {cohort.starts_on ? ` The program starts ${formatDay(cohort.starts_on)}.` : ""}
-      {cohort.announce_note ? ` ${cohort.announce_note}${cohort.announce_on ? ` (${formatDay(cohort.announce_on)})` : ""}.` : ""}
+      {` ${decisionText(cohort, formatDay)}`}
     </p>
     <p className="mb-10 text-sm text-gray-500">Only you and PANA admins can see your application.</p>
     <ApplicationForm cohortId={cohort.id} ideas={ideas.map((i) => ({ id: i.id, name: i.project_name, status: i.status, stage: i.stage }))} />

@@ -167,11 +167,11 @@ test("public cohort list hides drafts and completed cohorts; preview seed is ide
   const pub = await d.query(PUBLIC_COHORTS_SQL);
   assert.deepEqual(pub.map((r) => r.slug), ["cohort-1-spring-2027"]);
   const [s] = pub;
-  assert.equal(s.capacity, 10);
+  assert.equal(s.capacity, null, "no fixed number of spots");
   assert.equal(s.format, "virtual");
   assert.equal(new Date(s.apply_opens_at).toISOString(), "2026-12-01T05:00:00.000Z", "Dec 1, 12:00 AM ET");
   assert.equal(new Date(s.apply_closes_at).toISOString(), "2027-02-01T04:59:00.000Z", "Jan 31, 11:59 PM ET");
-  assert.deepEqual([s.starts_on, s.ends_on, s.announce_on], ["2027-03-01", "2027-05-23", "2027-02-21"]);
+  assert.deepEqual([s.starts_on, s.ends_on, s.announce_on], ["2027-03-01", "2027-05-23", "2027-02-26"]);
   assert.equal((Date.parse(`${s.ends_on}T00:00:00Z`) - Date.parse(`${s.starts_on}T00:00:00Z`)) / 86400000 + 1, 84, "12 weeks");
   assert.equal(SEED_COHORTS.length, 1);
   await pg.close();

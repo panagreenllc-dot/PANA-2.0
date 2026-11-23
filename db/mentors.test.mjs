@@ -58,7 +58,7 @@ test("012 is additive: applies on top of 001-011, leaves domino_* and existing t
   for (const t of ["profile", "idea", "request"]) await d.query("INSERT INTO reports (reporter_user_id, target_type, target_id, reason) VALUES ('a', $1, 'b', 'spam')", [t]);
   const before = [await shape(), await cons(), await idx()];
   const pBefore = await projectCols();
-  await runMigrations(d, loadMigrations(), { log: () => {} });
+  await runMigrations(d, loadMigrations().filter((m) => m.version <= "012"), { log: () => {} });
   assert.deepEqual([await shape(), await cons(), await idx()], before);
   assert.deepEqual((await projectCols()).filter((c) => c !== "investor_interest_open"), pBefore);
   const [col] = await d.query("SELECT is_nullable, column_default FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'investor_interest_open'");
@@ -66,7 +66,7 @@ test("012 is additive: applies on top of 001-011, leaves domino_* and existing t
   assert.equal((await d.query("SELECT count(*)::int AS n FROM reports"))[0].n, 3);
   const tables = (await d.query("SELECT table_name FROM information_schema.tables WHERE table_name IN ('mentor_profiles','investor_profiles','mentorship_requests','investor_interests') ORDER BY 1")).map((r) => r.table_name);
   assert.deepEqual(tables, ["investor_interests", "investor_profiles", "mentor_profiles", "mentorship_requests"]);
-  assert.deepEqual(await runMigrations(d, loadMigrations(), { log: () => {} }), [], "idempotent");
+  assert.deepEqual(await runMigrations(d, loadMigrations().filter((m) => m.version <= "012"), { log: () => {} }), [], "idempotent");
   const cols = (await d.query("SELECT column_name FROM information_schema.columns WHERE table_name IN ('mentor_profiles','investor_profiles','mentorship_requests','investor_interests')")).map((r) => r.column_name);
   assert.ok(!cols.filter((c) => c !== "intro_email_id").some((c) => /email|phone|amount|check_size|accredit|price|dollar/.test(c)), "no contact or money columns");
   await d.query("INSERT INTO reports (reporter_user_id, target_type, target_id, reason) VALUES ('a', 'mentor_profile', 'b', 'spam')");
