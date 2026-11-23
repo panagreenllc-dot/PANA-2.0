@@ -77,8 +77,8 @@ async function decide(fd: FormData, to: Decision) {
   if (!id || !cohortId || !(DECISIONS as readonly string[]).includes(to)) redirect(back(cohortId, { error: "Invalid decision." }));
   if (to === "accepted" && fd.get("over_capacity") !== "on") {
     const cohort = await getCohort(cohortId);
-    if (cohort && (await acceptedCount(cohortId)) >= cohort.capacity) {
-      redirect(back(cohortId, { error: `This cohort is full (${cohort.capacity} spots). Tick "accept over capacity" to accept anyway.`, open: id }));
+    if (cohort && cohort.capacity != null && (await acceptedCount(cohortId)) >= cohort.capacity) {
+      redirect(back(cohortId, { error: `This cohort reached its soft limit (${cohort.capacity}). Tick "accept anyway" to accept.`, open: id }));
     }
   }
   const r = await decideApplication(id, admin.id, to, note, adminNote);

@@ -16,9 +16,9 @@ export const SEED_COHORTS = [{
   apply_closes_at: "2027-02-01T04:59:00Z",      // Sun, Jan 31, 2027, 11:59 PM ET
   starts_on: "2027-03-01",                      // Mon, Mar 1, 2027
   ends_on: "2027-05-23",                        // 12 weeks later (Sun, May 23, 2027)
-  announce_on: "2027-02-21",                    // Treasure Coast Tech Con
-  announce_note: "Accepted participants announced at Treasure Coast Tech Con",
-  capacity: 10,
+  announce_on: "2027-02-26",                    // decisions emailed privately by this date (never announced publicly)
+  announce_note: null,
+  capacity: null,                               // no fixed number of spots
 }];
 
 // Preview-only test fixture for the Terms re-accept banner: these Clerk *dev* test addresses (fixed code 424242) are

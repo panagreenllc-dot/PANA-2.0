@@ -11,6 +11,7 @@ const TABS = [
   { href: "/admin/incubator", label: "Incubator" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/mentors", label: "Mentors & Investors" },
+  { href: "/admin/community", label: "Community" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/profiles", label: "Profiles" },
   { href: "/admin/members", label: "Members" },

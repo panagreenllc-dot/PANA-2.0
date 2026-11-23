@@ -26,13 +26,13 @@ export default async function AdminIncubatorPage({ searchParams }: { searchParam
                   <Link href={`/admin/incubator/${c.id}`} className="text-lg font-semibold hover:text-green-300">{c.name}</Link>
                   <p className="text-xs text-gray-500">
                     {c.status} ({cohortPhase(c as never)}) · closes {formatDateTime(c.apply_closes_at) || "—"}
-                    {c.starts_on ? ` · starts ${formatDay(c.starts_on)}` : ""} · {c.capacity} spots
+                    {c.starts_on ? ` · starts ${formatDay(c.starts_on)}` : ""}{c.capacity ? ` · soft limit ${c.capacity}` : " · no fixed spots"}
                   </p>
                 </div>
                 <div className="flex gap-2 text-xs">
                   <span className="rounded-full bg-yellow-500/15 px-2 py-1 text-yellow-200">{c.to_review} to review</span>
                   <span className="rounded-full bg-white/10 px-2 py-1">{c.waitlisted} waitlisted</span>
-                  <span className="rounded-full bg-green-500/15 px-2 py-1 text-green-300">{c.accepted}/{c.capacity} accepted</span>
+                  <span className="rounded-full bg-green-500/15 px-2 py-1 text-green-300">{c.accepted} accepted</span>
                 </div>
               </li>
             ))}

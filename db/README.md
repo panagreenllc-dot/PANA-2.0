@@ -89,3 +89,30 @@ Mentor/investor roles live in `mentor_profiles` / `investor_profiles` (SQL in `l
 `db/mentors.test.mjs`); John approves, declines or revokes each one in Admin → Mentors & Investors (audited).
 
 **012 (`012_mentors_investors.sql`) is on production** (applied 2026-11-22 6:28 PM EST, before PR #12 was merged; see the log above).
+
+## Community feed, events and member board (`lib/community*.ts`, P3-4)
+
+**013 (`013_community_posts.sql`) is NOT on production yet.** It runs only on the Vercel Preview branch database until John
+approves it in writing; then: backup → dry run → apply → verify → merge → add a row to the applied log above.
+
+- `community_posts` + `event_agenda_items` + `event_speakers`: John's announcements and events (Admin → Community). Times are
+  typed in ET (`parseEasternLocal`) and stored in UTC. Price (`price_text`) and the registration link/note are plain fields,
+  so "To be announced" → "Free" or adding a link later is an admin edit, not a code change.
+- `member_posts` + `member_post_replies`: the members-only board. A member's first post or reply is `pending`; once one is
+  approved, later ones publish straight away (decided in SQL, `POST_INSERT_SQL` / `REPLY_INSERT_SQL`). Limits: 5 posts and 30
+  replies a day. Contact details and money amounts are rejected in `lib/community.ts`. Three distinct open reports set
+  `hidden_by_reports` until John reviews. Rows cascade when a member is deleted.
+- `community_digests` + `community_digest_recipients`: the opt-in digest (`email_prefs.community_digest`, off by default) of
+  John's posts only; at most one every 14 days, sent 90 per day. `DIGEST_TARGETS_SQL` is the only query that reads emails.
+- `reports_target_type_check` is widened with `member_post` and `member_reply`.
+
+**Data changes inside 013 (prod effect at merge, guarded on the old values so re-runs are no-ops):**
+- Incubator cohort `cohort-1-spring-2027` (prod id `7fe7aedf-2f8c-40c2-9f6a-9b91186c16d0`): `capacity` 10 → NULL (no fixed
+  spots; the column becomes nullable), `announce_on` 2027-02-21 → 2027-02-26 (date decisions are emailed by),
+  `announce_note` "…announced at Treasure Coast Tech Con" → NULL. Application and program dates are unchanged.
+- Seeds the Tech Con event `treasure-coast-tech-con-2027`: Sun May 30, 2027, 10:30 AM–5:00 PM ET, Havert L. Fenn Center,
+  price "To be announced", "Registration opens soon", speaker Professor Joseph Ali (Keiser University · Guest speaker).
+
+Rollback: `DROP TABLE community_digest_recipients, community_digests, member_post_replies, member_posts, event_speakers,
+event_agenda_items, community_posts;` restore the 012 reports check; put the cohort values back and `SET NOT NULL DEFAULT 10`
+on `incubator_cohorts.capacity` (after filling NULLs). Existing tables, including `domino_*`, are untouched (PGlite test).

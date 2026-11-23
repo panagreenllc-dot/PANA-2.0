@@ -126,7 +126,7 @@ export function parseApplication(fd: FormData): { data?: ApplicationInput; state
 export type CohortInput = {
   name: string; slug: string; summary: string | null; format: string; status: CohortStatus;
   apply_opens_at: Date | null; apply_closes_at: Date | null; starts_on: string | null; ends_on: string | null;
-  announce_on: string | null; announce_note: string | null; capacity: number;
+  announce_on: string | null; announce_note: string | null; capacity: number | null;
 };
 
 export function slugify(s: string): string {
@@ -150,7 +150,8 @@ export function parseCohort(fd: FormData): { data?: CohortInput; error?: string 
   const announce_on = day(str(fd, "announce_on"));
   const announce_note = str(fd, "announce_note") || null;
   const capRaw = str(fd, "capacity");
-  const capacity = /^\d{1,3}$/.test(capRaw) ? Number(capRaw) : NaN;
+  // No fixed number of spots by default (John, Nov 22, 2026): blank = no cap. A number is an internal soft limit only.
+  const capacity = capRaw === "" ? null : /^\d{1,3}$/.test(capRaw) ? Number(capRaw) : NaN;
 
   if (name.length < 2 || name.length > 80) return { error: "Name must be 2–80 characters." };
   if (!slug) return { error: "Add a short web name (slug)." };
@@ -161,8 +162,21 @@ export function parseCohort(fd: FormData): { data?: CohortInput; error?: string 
   if (apply_opens_at && apply_closes_at && apply_closes_at <= apply_opens_at) return { error: "Applications must close after they open." };
   if (starts_on === undefined || ends_on === undefined || announce_on === undefined) return { error: "Program dates must be valid dates." };
   if (starts_on && ends_on && ends_on <= starts_on) return { error: "The program must end after it starts." };
-  if (announce_note && announce_note.length > 200) return { error: "Announcement note must be under 200 characters." };
-  if (!(capacity >= 1 && capacity <= 500)) return { error: "Spots must be between 1 and 500." };
+  if (announce_note && announce_note.length > 200) return { error: "The decision note must be under 200 characters." };
+  if (announce_note && /tech ?con|announc|public/i.test(announce_note)) return { error: "Decisions are private and sent by email only, so the note can't mention a public announcement." };
+  if (capacity !== null && !(capacity >= 1 && capacity <= 500)) return { error: "Leave the soft limit empty (no fixed number), or use 1–500." };
   if (status === "open" && !apply_closes_at) return { error: "Set an application close date before opening the cohort." };
   return { data: { name, slug, summary, format, status, apply_opens_at, apply_closes_at, starts_on, ends_on, announce_on, announce_note, capacity } };
 }
+
+/**
+ * How applicants hear back. Decisions are private and emailed to each applicant; they're never announced publicly
+ * (John, Nov 22, 2026). announce_on = the "emailed by" date; announce_note = an optional extra line for applicants.
+ */
+export function decisionText(c: { announce_on?: string | null; announce_note?: string | null }, formatDayFn: (d: string) => string): string {
+  const when = c.announce_on ? formatDayFn(c.announce_on) : "";
+  const base = `Decisions are emailed privately to each applicant${when ? ` by ${when}` : ""}.`;
+  return c.announce_note ? `${base} ${c.announce_note.replace(/\.?$/, ".")}` : base;
+}
+
+export const COMMUNITY_WELCOME = "There's no fixed number of spots. If you're not placed in a cohort, you're still welcome in the PANA community: post on the community board, find a mentor and keep building with members who support each other.";

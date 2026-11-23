@@ -44,6 +44,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     ) : r.target_type === "mentor_profile" ? (
                       <><Link href={`/mentors/${r.target_id}`} className="underline">Mentor: {r.mentor_name ?? r.target_id}</Link>{" "}
                         <Link href="/admin/mentors#approved" className="ml-2 text-xs font-normal text-gray-400 underline">Manage in Mentors &amp; Investors</Link></>
+                    ) : r.target_type === "member_post" || r.target_type === "member_reply" ? (
+                      <Link href="/admin/community#queue" className="underline">Community board {r.target_type === "member_post" ? "post" : "reply"}: review in Admin → Community</Link>
                     ) : r.target_id}
                     {r.hidden_by_reports && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden</span>}
                     {r.moderation === "hidden" && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">hidden{r.hidden_reason ? `: ${r.hidden_reason}` : ""}</span>}

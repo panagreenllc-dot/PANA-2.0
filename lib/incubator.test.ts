@@ -1,7 +1,7 @@
 // Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canDecide, canWithdraw, cohortPhase, parseApplication, parseCohort, parseUuid, slugify } from "./incubator";
+import { canDecide, canWithdraw, cohortPhase, COMMUNITY_WELCOME, decisionText, parseApplication, parseCohort, parseUuid, slugify } from "./incubator";
 import { adminNewApplicationEmail, adminNotifyAddress, applicationDecisionEmail, applicationReceivedEmail, ideaReviewEmail, isReservedAddress, maskEmail, sendEmail } from "./email";
 
 const fd = (o: Record<string, string | string[]>) => {
@@ -47,7 +47,7 @@ test("parseApplication validates and keeps only access needs", () => {
 
 test("parseCohort: ET date-times, date order, open needs a close time", () => {
   const base = { name: "Cohort 1, Spring 2027", format: "virtual", capacity: "10", apply_opens_at: "2026-12-01T00:00", apply_closes_at: "2027-01-31T23:59",
-    starts_on: "2027-03-01", ends_on: "2027-05-23", announce_on: "2027-02-21", status: "open" };
+    starts_on: "2027-03-01", ends_on: "2027-05-23", announce_on: "2027-02-26", status: "open" };
   const r = parseCohort(fd(base));
   assert.ok(r.data, r.error);
   assert.equal(r.data!.slug, "cohort-1-spring-2027");
@@ -57,13 +57,16 @@ test("parseCohort: ET date-times, date order, open needs a close time", () => {
   assert.ok(parseCohort(fd({ ...base, apply_closes_at: "2026-11-01T00:00" })).error);
   assert.ok(parseCohort(fd({ ...base, ends_on: "2027-02-01" })).error);
   assert.ok(parseCohort(fd({ ...base, capacity: "0" })).error);
+  assert.equal(r.data!.capacity, 10, "a soft limit can still be set");
+  assert.equal(parseCohort(fd({ ...base, capacity: "" })).data!.capacity, null, "empty = no fixed number of spots");
+  assert.ok(parseCohort(fd({ ...base, announce_note: "Accepted participants announced at Tech Con" })).error, "decisions are never public");
   assert.ok(parseCohort(fd({ ...base, status: "bogus" })).error);
   assert.ok(parseCohort(fd({ ...base, starts_on: "2027-02-30x" })).error);
   assert.equal(slugify("  Cohort #2 — Fall 2027!! "), "cohort-2-fall-2027");
 });
 
 test("emails: one recipient each, no other member's address, admin notice is link-only", () => {
-  const r = applicationReceivedEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", ideaName: "Idea", announceText: "Announced at Tech Con." });
+  const r = applicationReceivedEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", ideaName: "Idea", announceText: "Decisions are emailed privately to each applicant by Fri, Feb 26, 2027." });
   assert.deepEqual(r.to, ["a@x.org"]);
   assert.match(r.text, /doesn't give out money or equipment/);
   for (const decision of ["accepted", "waitlisted", "declined"] as const) {
@@ -94,4 +97,17 @@ test("admin notify address defaults to the PANA inbox; test addresses are logged
   const res = await sendEmail({ to: ["jane+clerk_test@example.com"], subject: "s", text: "t" }, { apiKey: "re_x", fetchImpl: (async () => { called = true; return new Response("{}"); }) as typeof fetch });
   assert.equal(called, false);
   assert.equal((res as { skipped?: boolean }).skipped, true);
+});
+
+test("decisions are private: the text never mentions a public announcement; declined and waitlisted emails welcome people to the community", () => {
+  const fmt = (d: string) => d;
+  assert.equal(decisionText({ announce_on: "2027-02-26" }, fmt), "Decisions are emailed privately to each applicant by 2027-02-26.");
+  assert.equal(decisionText({}, fmt), "Decisions are emailed privately to each applicant.");
+  assert.equal(decisionText({ announce_on: null, announce_note: "We may ask a few questions first" }, fmt), "Decisions are emailed privately to each applicant. We may ask a few questions first.");
+  assert.match(COMMUNITY_WELCOME, /no fixed number of spots/);
+  for (const decision of ["waitlisted", "declined"] as const) {
+    const m = applicationDecisionEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", decision, note: null });
+    assert.match(m.text, /community board/);
+    assert.doesNotMatch(m.text, /spot opens|tech con/i);
+  }
 });

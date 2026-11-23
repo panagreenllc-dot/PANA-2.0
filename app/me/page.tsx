@@ -12,9 +12,11 @@ import { getProfileRow } from "@/lib/profiles-repo";
 import { emailPrefsAction } from "./actions";
 import { withdrawApplicationAction } from "@/app/incubator/actions";
 import { myApplications } from "@/lib/incubator-repo";
-import { APP_STATUS_LABEL, canWithdraw } from "@/lib/incubator";
+import { APP_STATUS_LABEL, canWithdraw, decisionText } from "@/lib/incubator";
 import { formatDateTime, formatDay } from "@/lib/datetime";
 import { TERMS_UPDATED_ON } from "@/lib/gate";
+import { myPosts } from "@/lib/community-repo";
+import { kindLabel as boardKind } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "My PANA", robots: { index: false, follow: false } };
@@ -30,13 +32,14 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
   const { userId, termsCurrent } = await requireMember("/me");
   const { saved } = await searchParams;
   await R.expireAll();
-  const [ideas, lists, needs, partners, profile, [m], apps] = await Promise.all([
+  const [ideas, lists, needs, partners, profile, [m], apps, boardPosts] = await Promise.all([
     myIdeas(userId), Promise.all(REQUEST_KINDS.map((k) => R.listForUser(k, userId))), myNeeds(userId),
     myPartners(userId).catch((e) => { console.error("myPartners failed", e); return []; }), getProfileRow(userId),
     sql`SELECT email_prefs FROM members WHERE user_id = ${userId}`,
     myApplications(userId).catch((e) => { console.error("myApplications failed", e); return []; }),
+    myPosts(userId).catch((e) => { console.error("myPosts failed", e); return []; }),
   ]);
-  const prefs = (m?.email_prefs ?? {}) as { requests?: boolean; reviews?: boolean; incubator?: boolean; incubator_news?: boolean };
+  const prefs = (m?.email_prefs ?? {}) as { requests?: boolean; reviews?: boolean; incubator?: boolean; incubator_news?: boolean; community_digest?: boolean };
   const card = "rounded-2xl border border-white/10 p-6";
   const reqSummary = REQUEST_KINDS.map((k, i) => ({
     kind: k, waiting: lists[i].received.filter((r) => r.status === "pending").length,
@@ -97,8 +100,8 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
                   </p>
                 )}
                 {a.decision_note && <p className="rounded-lg bg-white/5 p-3 text-sm text-gray-300">Note from PANA: {a.decision_note}</p>}
-                {(a.status === "submitted" || a.status === "under_review") && a.announce_note && (
-                  <p className="text-xs text-gray-500">{a.announce_note}{a.announce_on ? ` (${formatDay(a.announce_on)})` : ""}.</p>
+                {(a.status === "submitted" || a.status === "under_review") && (
+                  <p className="text-xs text-gray-500">{decisionText(a, formatDay)}</p>
                 )}
                 {canWithdraw(a.status) && (
                   <form action={withdrawApplicationAction}>
@@ -171,6 +174,26 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         )}
       </section>
 
+      <section id="community" className={card}>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">My community posts</h2>
+          <Link href="/community/board" className="text-sm text-green-400 underline">Community board</Link>
+        </div>
+        {boardPosts.length === 0 ? <p className="text-gray-500">No posts yet. Ask a question, share a win or offer a tip on the community board.</p> : (
+          <ul className="divide-y divide-white/10">
+            {boardPosts.slice(0, 10).map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <div>
+                  <Link href={`/community/board/${p.id}`} className="font-medium hover:text-green-300">{p.title}</Link>
+                  <p className="text-xs text-gray-500">{boardKind(p.kind)} · {p.reply_count} {p.reply_count === 1 ? "reply" : "replies"}</p>
+                </div>
+                <span className={badge(p.status === "published" ? "approved" : p.status)}>{p.status === "published" ? (p.hidden_by_reports ? "Hidden for review" : "Live") : p.status === "pending" ? "Waiting for review" : p.status === "declined" ? "Not approved" : p.status}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section id="requests" className={card}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Requests</h2>
@@ -213,7 +236,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         </section>
       )}
 
-      <section className={card}>
+      <section id="email" className={card + " scroll-mt-24"}>
         <h2 className="mb-4 text-xl font-semibold">Email notifications</h2>
         {saved === "prefs" && <p className="mb-3 text-sm text-green-300">Preferences saved.</p>}
         <form action={emailPrefsAction} className="space-y-3">
@@ -221,6 +244,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="reviews" defaultChecked={prefs.reviews !== false} className="h-4 w-4 accent-green-500" /> Review results for my ideas and needs</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator" defaultChecked={prefs.incubator !== false} className="h-4 w-4 accent-green-500" /> Updates on my incubator applications</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator_news" defaultChecked={prefs.incubator_news === true} className="h-4 w-4 accent-green-500" /> Tell me when incubator applications open</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="community_digest" defaultChecked={prefs.community_digest === true} className="h-4 w-4 accent-green-500" /> Community digest: PANA announcements and upcoming events (about twice a month at most)</label>
           <p className="text-xs text-gray-500">Introduction emails for requests you accept or that are accepted are always sent, since they&apos;re how you connect.</p>
           <button className="rounded-lg border border-white/20 px-4 py-2 text-sm">Save preferences</button>
         </form>

@@ -20,7 +20,10 @@ async function pendingCount(): Promise<number | null> {
     const needs = await sql`SELECT count(*)::int AS n FROM project_needs WHERE status = 'pending'`.then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
     const roles = await sql`SELECT (SELECT count(*) FROM mentor_profiles WHERE status = 'pending') + (SELECT count(*) FROM investor_profiles WHERE status = 'pending') AS n`
       .then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
-    return base + partners + needs + roles;
+    const board = await sql`SELECT ((SELECT count(*) FROM member_posts WHERE status = 'pending' OR hidden_by_reports)
+      + (SELECT count(*) FROM member_post_replies WHERE status = 'pending' OR hidden_by_reports))::int AS n`
+      .then((r) => Number(r[0]?.n ?? 0)).catch(() => 0);
+    return base + partners + needs + roles + board;
   } catch {
     return null;
   }

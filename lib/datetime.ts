@@ -76,3 +76,17 @@ export function toEasternLocalInput(v: Date | string | null | undefined): string
   const z = (n: number) => String(n).padStart(2, "0");
   return `${p.y}-${z(p.mo)}-${z(p.da)}T${z(p.h)}:${z(p.mi)}`;
 }
+
+const evDay = new Intl.DateTimeFormat("en-US", { timeZone: SITE_TZ, weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const evTime = new Intl.DateTimeFormat("en-US", { timeZone: SITE_TZ, hour: "numeric", minute: "2-digit" });
+
+/** Event date and time in ET: { day: "Sunday, May 30, 2027", time: "10:30 AM – 5:00 PM ET" }. Multi-day ranges show both days. */
+export function formatEventRange(start: Date | string | null | undefined, end?: Date | string | null): { day: string; time: string } {
+  const s = toDate(start);
+  if (!s) return { day: "", time: "" };
+  const e = toDate(end ?? null);
+  const day = evDay.format(s);
+  if (!e) return { day, time: `${evTime.format(s)} ET` };
+  if (evDay.format(e) !== day) return { day: `${day} – ${evDay.format(e)}`, time: `${evTime.format(s)} – ${evTime.format(e)} ET` };
+  return { day, time: `${evTime.format(s)} – ${evTime.format(e)} ET` };
+}

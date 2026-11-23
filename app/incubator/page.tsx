@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import PageIntro, { CardGrid, btnPrimary, btnSecondary } from "@/components/PageIntro";
 import { formatDateTime, formatDay } from "@/lib/datetime";
-import { cohortPhase, COHORT_FORMATS } from "@/lib/incubator";
+import { cohortPhase, COHORT_FORMATS, COMMUNITY_WELCOME, decisionText } from "@/lib/incubator";
 import { publicCohorts } from "@/lib/incubator-repo";
 import { getViewer } from "@/lib/members";
 import sql, { type Row } from "@/lib/db";
@@ -39,13 +39,14 @@ function CohortCard({ c }: { c: Row }) {
       <h2 className="mb-2 text-3xl font-semibold">{c.name}</h2>
       {c.summary && <p className="mb-6 max-w-2xl whitespace-pre-line text-gray-300">{c.summary}</p>}
       <dl className="mb-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div><dt className="text-gray-500">Format</dt><dd className="font-medium">{formatLabel(c.format)} · {c.capacity} spots</dd></div>
+        <div><dt className="text-gray-500">Format</dt><dd className="font-medium">{formatLabel(c.format)}</dd></div>
         <div><dt className="text-gray-500">Applications</dt><dd className="font-medium">
           {c.apply_opens_at ? `${formatDateTime(c.apply_opens_at)} – ` : "Until "}{formatDateTime(c.apply_closes_at)}
         </dd></div>
         {(c.starts_on || c.ends_on) && <div><dt className="text-gray-500">Program</dt><dd className="font-medium">{formatDay(c.starts_on)}{c.ends_on ? ` – ${formatDay(c.ends_on)}` : ""}</dd></div>}
-        {(c.announce_on || c.announce_note) && <div><dt className="text-gray-500">Decisions</dt><dd className="font-medium">{c.announce_note}{c.announce_on ? ` · ${formatDay(c.announce_on)}` : ""}</dd></div>}
+        <div><dt className="text-gray-500">Decisions</dt><dd className="font-medium">By private email{c.announce_on ? `, by ${formatDay(c.announce_on)}` : ""}</dd></div>
       </dl>
+      <p className="mb-6 max-w-2xl text-sm text-gray-400">{decisionText(c, formatDay)} {COMMUNITY_WELCOME}</p>
       {phase === "open" ? (
         <Link href={`/incubator/apply?cohort=${c.id}`} className={btnPrimary + " inline-block"}>Apply now</Link>
       ) : phase === "upcoming" ? (
