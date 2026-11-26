@@ -10,7 +10,7 @@ import { STAGES } from "@/lib/ideas";
 import { adminNoteAction, cohortStatusAction, acceptApplicationAction, declineApplicationAction, notifyInterestedAction, participantAction, reviewApplicationAction, updateCohortAction, waitlistApplicationAction } from "../actions";
 
 const NOTICES: Record<string, string> = {
-  created: "Cohort created.", saved: "Cohort saved.", participant: "Participant updated.", note: "Private note saved.",
+  created: "Program created.", saved: "Program saved.", participant: "Participant updated.", note: "Private note saved.",
   "decided-under_review": "Marked as in review.", "decided-accepted": "Accepted.", "decided-waitlisted": "Waitlisted.", "decided-declined": "Declined.",
 };
 const EMAIL_NOTE: Record<string, string> = {
@@ -38,7 +38,7 @@ export default async function AdminCohortPage({ params, searchParams }: {
 
   return (
     <section className="space-y-8">
-      <Link href="/admin/incubator" className="text-sm text-gray-400 hover:text-white">← All cohorts</Link>
+      <Link href="/admin/incubator" className="text-sm text-gray-400 hover:text-white">← All programs</Link>
       <AdminNotice error={sp.error} />
       {notice && <p role="status" className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">{notice}{sp.email && EMAIL_NOTE[sp.email] ? ` ${EMAIL_NOTE[sp.email]}` : ""}</p>}
 
@@ -71,15 +71,15 @@ export default async function AdminCohortPage({ params, searchParams }: {
             {cohort.notified_at ? `"Notify me" members were emailed ${formatDateTime(cohort.notified_at)}.` : (
               <form action={notifyInterestedAction} className="flex flex-wrap items-center gap-3">
                 <input type="hidden" name="id" value={cohort.id} />
-                <span>{waiting} member{waiting === 1 ? "" : "s"} asked to hear when applications open (up to 90 emails are sent, once per cohort).</span>
+                <span>{waiting} member{waiting === 1 ? "" : "s"} asked to hear when applications open (up to 90 emails are sent, once per program).</span>
                 <button disabled={waiting === 0} className={`${btn} border-green-500/50 text-green-300 disabled:opacity-40`}>Email them now</button>
               </form>
             )}
           </div>
         )}
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm text-gray-300">Edit cohort details</summary>
-          <div className="mt-4"><CohortForm action={updateCohortAction} cohort={cohort} submitLabel="Save cohort" /></div>
+          <summary className="cursor-pointer text-sm text-gray-300">Edit program details</summary>
+          <div className="mt-4"><CohortForm action={updateCohortAction} cohort={cohort} submitLabel="Save program" /></div>
         </details>
       </div>
 

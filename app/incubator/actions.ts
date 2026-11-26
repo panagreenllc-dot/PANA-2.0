@@ -21,9 +21,9 @@ export async function applyAction(_prev: ApplicationFormState, fd: FormData): Pr
   if (!data) return state!;
   try {
     const cohort = await acceptingCohort(data.cohort_id);
-    if (!cohort) return { error: "This cohort isn't accepting applications right now.", values: { ...data, link: data.links.main ?? "" } };
+    if (!cohort) return { error: "The incubator isn't accepting applications right now.", values: { ...data, link: data.links.main ?? "" } };
     if (await hasLiveApplication(data.cohort_id, userId)) {
-      return { error: "You already have an application for this cohort. You can see it on My PANA.", values: { ...data, link: data.links.main ?? "" } };
+      return { error: "You already have an application. You can see it on My PANA.", values: { ...data, link: data.links.main ?? "" } };
     }
     const id = await submitApplication(userId, data);
     if (!id) return { error: "We couldn't submit this application. Check that the idea is yours and still active.", values: { ...data, link: data.links.main ?? "" } };

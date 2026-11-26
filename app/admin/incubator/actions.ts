@@ -55,7 +55,7 @@ export async function cohortStatusAction(fd: FormData) {
   const id = parseUuid(fd.get("id"));
   const status = String(fd.get("status") ?? "");
   if (!id) redirect(back(null, { error: "Invalid cohort." }));
-  if (!(await setCohortStatus(id, status))) redirect(back(id, { error: "Couldn't change status (set a close date before opening)." }));
+  if (!(await setCohortStatus(id, status))) redirect(back(id, { error: "Couldn't change status." }));
   await audit(admin.id, `cohort_${status}`, "cohort", id);
   refresh();
   redirect(back(id, { notice: `status-${status}` }));

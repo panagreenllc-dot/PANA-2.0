@@ -21,7 +21,7 @@ async function latestIdeas() {
 
 const PILLARS = [
   { href: "/ideas", eyebrow: "Explore Ideas", title: "Discover what the community is building", body: "Browse ideas, startups and projects shared by members, and find something to support or join." },
-  { href: "/incubator", eyebrow: "Incubator", title: "A virtual incubator for builders", body: "Guidance, mentorship, and access to resources through community partners, to turn an idea into reality." },
+  { href: "/incubator", eyebrow: "Incubator", title: "A virtual incubator for builders", body: "Apply any time, year-round. Guidance, mentorship, and access to resources through community partners, to turn an idea into reality." },
   { href: "/community", eyebrow: "Community", title: "Developers, founders, creators, mentors", body: "Starting on the Treasure Coast, with an online community open to everyone. Find collaborators and learn together." },
 ];
 

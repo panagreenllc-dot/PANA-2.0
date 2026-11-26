@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import PageIntro, { CardGrid, btnPrimary, btnSecondary } from "@/components/PageIntro";
-import { formatDateTime, formatDay } from "@/lib/datetime";
-import { cohortPhase, COHORT_FORMATS, COMMUNITY_WELCOME, decisionText } from "@/lib/incubator";
+import { COHORT_FORMATS, COMMUNITY_WELCOME, decisionText, cohortPhase, PROGRAM_PUBLIC_NAME } from "@/lib/incubator";
 import { publicCohorts } from "@/lib/incubator-repo";
 import { getViewer } from "@/lib/members";
 import sql, { type Row } from "@/lib/db";
@@ -11,7 +10,7 @@ import { notifyMeAction } from "./actions";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Incubator",
-  description: "The PANA 2.0 virtual incubator: guidance, mentorship, and access to resources through community partners.",
+  description: "The PANA 2.0 virtual incubator: apply any time, year-round. Guidance, mentorship, and access to resources through community partners.",
 };
 
 const SUPPORT = [
@@ -30,28 +29,28 @@ const PATHS = [
 
 const formatLabel = (f: string) => COHORT_FORMATS.find((x) => x.value === f)?.label ?? f;
 
-function CohortCard({ c }: { c: Row }) {
-  const phase = cohortPhase(c as never);
-  const label = { open: "Applications open", upcoming: "Opening soon", closed: "Applications closed", running: "In progress" }[phase as string] ?? "";
+function EnrollmentCard({ open, program }: { open: boolean; program: Row | null }) {
   return (
     <div className="rounded-2xl border border-green-500/30 bg-gradient-to-br from-green-500/10 to-transparent p-8">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">{label}</p>
-      <h2 className="mb-2 text-3xl font-semibold">{c.name}</h2>
-      {c.summary && <p className="mb-6 max-w-2xl whitespace-pre-line text-gray-300">{c.summary}</p>}
-      <dl className="mb-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div><dt className="text-gray-500">Format</dt><dd className="font-medium">{formatLabel(c.format)}</dd></div>
-        <div><dt className="text-gray-500">Applications</dt><dd className="font-medium">
-          {c.apply_opens_at ? `${formatDateTime(c.apply_opens_at)} – ` : "Until "}{formatDateTime(c.apply_closes_at)}
-        </dd></div>
-        {(c.starts_on || c.ends_on) && <div><dt className="text-gray-500">Program</dt><dd className="font-medium">{formatDay(c.starts_on)}{c.ends_on ? ` – ${formatDay(c.ends_on)}` : ""}</dd></div>}
-        <div><dt className="text-gray-500">Decisions</dt><dd className="font-medium">By private email{c.announce_on ? `, by ${formatDay(c.announce_on)}` : ""}</dd></div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-400">
+        {open ? "Open enrollment" : "Applications closed"}
+      </p>
+      <h2 className="mb-2 text-3xl font-semibold">{PROGRAM_PUBLIC_NAME}</h2>
+      <p className="mb-6 max-w-2xl text-gray-300">
+        Enrollment is open year-round. Apply any time — 24/7, 365 days a year. We take the time to review your idea
+        and what you&apos;re looking for, then email you a decision.
+      </p>
+      <dl className="mb-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <div><dt className="text-gray-500">Format</dt><dd className="font-medium">{formatLabel(String(program?.format ?? "virtual"))}</dd></div>
+        <div><dt className="text-gray-500">Applications</dt><dd className="font-medium">{open ? "Open year-round" : "Temporarily closed"}</dd></div>
+        <div><dt className="text-gray-500">Decisions</dt><dd className="font-medium">By private email, on a rolling basis</dd></div>
       </dl>
-      <p className="mb-6 max-w-2xl text-sm text-gray-400">{decisionText(c, formatDay)} {COMMUNITY_WELCOME}</p>
-      {phase === "open" ? (
-        <Link href={`/incubator/apply?cohort=${c.id}`} className={btnPrimary + " inline-block"}>Apply now</Link>
-      ) : phase === "upcoming" ? (
-        <p className="text-sm text-gray-400">Applications open {formatDateTime(c.apply_opens_at)}.</p>
-      ) : null}
+      <p className="mb-6 max-w-2xl text-sm text-gray-400">{decisionText(program ?? {})} {COMMUNITY_WELCOME}</p>
+      {open && program ? (
+        <Link href={`/incubator/apply?cohort=${program.id}`} className={btnPrimary + " inline-block"}>Apply now</Link>
+      ) : (
+        <p className="text-sm text-gray-400">Applications are temporarily closed. You can ask to be notified below.</p>
+      )}
     </div>
   );
 }
@@ -59,7 +58,9 @@ function CohortCard({ c }: { c: Row }) {
 export default async function IncubatorPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
   const { notice } = await searchParams;
   const [cohorts, viewer] = await Promise.all([publicCohorts().catch(() => [] as Row[]), getViewer().catch(() => null)]);
-  const anyOpen = cohorts.some((c) => cohortPhase(c as never) === "open");
+  const openPrograms = cohorts.filter((c) => cohortPhase(c as never) === "open");
+  const anyOpen = openPrograms.length > 0;
+  const program = openPrograms[0] ?? cohorts[0] ?? null;
   let wantsNews = false;
   if (viewer?.userId && viewer.status === "ok") {
     const [m] = await sql`SELECT email_prefs FROM members WHERE user_id = ${viewer.userId}`.catch(() => [] as Row[]);
@@ -70,23 +71,21 @@ export default async function IncubatorPage({ searchParams }: { searchParams: Pr
     <main>
       <PageIntro eyebrow="Incubator" title="A virtual incubator to help you build">
         <p>
-          The PANA 2.0 incubator starts as a virtual program, open wherever you are. We help beginners, students,
-          entrepreneurs and developers turn ideas into real projects and businesses, with guidance, mentorship and
-          access to resources through community partners.
+          The PANA 2.0 incubator is a virtual program, open wherever you are, with open enrollment year-round.
+          We help beginners, students, entrepreneurs and developers turn ideas into real projects and businesses,
+          with guidance, mentorship and access to resources through community partners.
         </p>
         <div className="flex flex-col gap-3 pt-4 sm:flex-row">
           {anyOpen
-            ? <a href="#cohorts" className={btnPrimary}>See the open cohort</a>
+            ? <a href="#apply" className={btnPrimary}>Apply now</a>
             : <a href="#notify" className={btnPrimary}>Get notified</a>}
           <Link href="/submit" className={btnSecondary}>Share your idea</Link>
         </div>
       </PageIntro>
 
-      {cohorts.length > 0 && (
-        <section id="cohorts" className="mx-auto max-w-6xl space-y-6 px-6 pt-20">
-          {cohorts.map((c) => <CohortCard key={c.id} c={c} />)}
-        </section>
-      )}
+      <section id="apply" className="mx-auto max-w-6xl space-y-6 px-6 pt-20">
+        <EnrollmentCard open={anyOpen} program={program} />
+      </section>
 
       <section className="mx-auto max-w-6xl px-6 py-20">
         <h2 className="mb-6 text-2xl font-semibold">What the incubator offers</h2>
@@ -112,19 +111,21 @@ export default async function IncubatorPage({ searchParams }: { searchParams: Pr
 
       <section id="notify" className="mx-auto max-w-6xl px-6 pb-24">
         <div className="rounded-2xl border border-white/10 p-8">
-          <h2 className="mb-2 text-2xl font-semibold">{anyOpen ? "Hear about future cohorts" : "Applications open soon"}</h2>
-          {notice === "notify-on" && <p className="mb-3 text-sm text-green-300">Done. We&apos;ll email you when applications open.</p>}
+          <h2 className="mb-2 text-2xl font-semibold">{anyOpen ? "Incubator news" : "Get notified when applications reopen"}</h2>
+          {notice === "notify-on" && <p className="mb-3 text-sm text-green-300">Done. We&apos;ll email you about incubator application news.</p>}
           {notice === "notify-off" && <p className="mb-3 text-sm text-gray-300">You won&apos;t get incubator news emails.</p>}
           <p className="mb-6 max-w-2xl text-gray-400">
-            Members can ask for one email when a cohort opens for applications. You can turn it off any time on My PANA.
+            {anyOpen
+              ? "Applications are open year-round. You can still opt in to occasional news, for example if applications ever close and reopen. Turn it off any time on My PANA."
+              : "Members can ask for one email when applications reopen. You can turn it off any time on My PANA."}
           </p>
           {!viewer?.userId ? (
-            <Link href="/sign-up" className={btnPrimary + " inline-block"}>Join PANA to get notified</Link>
+            <Link href="/sign-up" className={btnPrimary + " inline-block"}>{anyOpen ? "Join PANA to apply" : "Join PANA to get notified"}</Link>
           ) : (
             <form action={notifyMeAction}>
               <input type="hidden" name="on" value={wantsNews ? "off" : "on"} />
               <button className={(wantsNews ? btnSecondary : btnPrimary) + " inline-block"}>
-                {wantsNews ? "Stop incubator news" : "Notify me when applications open"}
+                {wantsNews ? "Stop incubator news" : anyOpen ? "Get incubator news" : "Notify me when applications reopen"}
               </button>
             </form>
           )}
