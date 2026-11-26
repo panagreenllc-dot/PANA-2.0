@@ -12,12 +12,10 @@ const fd = (o: Record<string, string | string[]>) => {
 const U = "0b0e6f5c-7c2a-4c1e-9d55-3f7f6c1e2a11";
 const U2 = "1b0e6f5c-7c2a-4c1e-9d55-3f7f6c1e2a12";
 
-test("cohortPhase follows status and the ET application window", () => {
+test("cohortPhase follows status only; dates do not gate open enrollment", () => {
   const c = { status: "open", apply_opens_at: "2026-12-01T05:00:00Z", apply_closes_at: "2027-02-01T04:59:00Z" };
-  assert.equal(cohortPhase(c, new Date("2026-11-30T23:00:00Z")), "upcoming", "Nov 30, 6 PM ET");
-  assert.equal(cohortPhase(c, new Date("2026-12-01T05:00:00Z")), "open", "Dec 1 midnight ET");
-  assert.equal(cohortPhase(c, new Date("2027-02-01T04:58:00Z")), "open", "Jan 31, 11:58 PM ET");
-  assert.equal(cohortPhase(c, new Date("2027-02-01T04:59:00Z")), "closed");
+  assert.equal(cohortPhase(c, new Date("2026-11-30T23:00:00Z")), "open", "open before a leftover start date");
+  assert.equal(cohortPhase(c, new Date("2027-02-01T04:59:00Z")), "open", "open after a leftover close date");
   assert.equal(cohortPhase({ ...c, status: "draft" }), "draft");
   assert.equal(cohortPhase({ ...c, status: "closed" }, new Date("2027-01-01T00:00:00Z")), "closed", "manual close wins");
   assert.equal(cohortPhase({ ...c, status: "active" }), "running");
@@ -45,15 +43,15 @@ test("parseApplication validates and keeps only access needs", () => {
   assert.equal(parseUuid("42"), null, "legacy integer ids are not accepted for uuid tables");
 });
 
-test("parseCohort: ET date-times, date order, open needs a close time", () => {
-  const base = { name: "Cohort 1, Spring 2027", format: "virtual", capacity: "10", apply_opens_at: "2026-12-01T00:00", apply_closes_at: "2027-01-31T23:59",
+test("parseCohort: ET date-times, date order, open enrollment does not need a close time", () => {
+  const base = { name: "PANA Incubator", format: "virtual", capacity: "10", apply_opens_at: "2026-12-01T00:00", apply_closes_at: "2027-01-31T23:59",
     starts_on: "2027-03-01", ends_on: "2027-05-23", announce_on: "2027-02-26", status: "open" };
   const r = parseCohort(fd(base));
   assert.ok(r.data, r.error);
-  assert.equal(r.data!.slug, "cohort-1-spring-2027");
+  assert.equal(r.data!.slug, "pana-incubator");
   assert.equal(r.data!.apply_opens_at!.toISOString(), "2026-12-01T05:00:00.000Z");
   assert.equal(r.data!.apply_closes_at!.toISOString(), "2027-02-01T04:59:00.000Z");
-  assert.ok(parseCohort(fd({ ...base, apply_closes_at: "" })).error, "open needs a close time");
+  assert.equal(parseCohort(fd({ ...base, apply_opens_at: "", apply_closes_at: "" })).data!.apply_closes_at, null, "open with no close time is allowed");
   assert.ok(parseCohort(fd({ ...base, apply_closes_at: "2026-11-01T00:00" })).error);
   assert.ok(parseCohort(fd({ ...base, ends_on: "2027-02-01" })).error);
   assert.ok(parseCohort(fd({ ...base, capacity: "0" })).error);
@@ -66,13 +64,16 @@ test("parseCohort: ET date-times, date order, open needs a close time", () => {
 });
 
 test("emails: one recipient each, no other member's address, admin notice is link-only", () => {
-  const r = applicationReceivedEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", ideaName: "Idea", announceText: "Decisions are emailed privately to each applicant by Fri, Feb 26, 2027." });
+  const r = applicationReceivedEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", ideaName: "Idea", announceText: "We review applications on a rolling basis and email a decision privately to each applicant." });
   assert.deepEqual(r.to, ["a@x.org"]);
   assert.match(r.text, /doesn't give out money or equipment/);
+  assert.match(r.subject, /PANA Incubator/);
+  assert.doesNotMatch(r.text, /Cohort 1|Feb 26|12 weeks/i);
   for (const decision of ["accepted", "waitlisted", "declined"] as const) {
     const m = applicationDecisionEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", decision, note: "See you", startsText: "Mon, Mar 1, 2027" });
     assert.deepEqual(m.to, ["a@x.org"]);
     assert.match(m.text, /See you/);
+    assert.doesNotMatch(m.text, /Cohort 1|Mar 1, 2027|future cohort/i);
   }
   const admin = adminNewApplicationEmail({ to: "admin@x.org", cohortId: U });
   assert.match(admin.text, new RegExp(`/admin/incubator/${U}`));
@@ -101,13 +102,13 @@ test("admin notify address defaults to the PANA inbox; test addresses are logged
 
 test("decisions are private: the text never mentions a public announcement; declined and waitlisted emails welcome people to the community", () => {
   const fmt = (d: string) => d;
-  assert.equal(decisionText({ announce_on: "2027-02-26" }, fmt), "Decisions are emailed privately to each applicant by 2027-02-26.");
-  assert.equal(decisionText({}, fmt), "Decisions are emailed privately to each applicant.");
-  assert.equal(decisionText({ announce_on: null, announce_note: "We may ask a few questions first" }, fmt), "Decisions are emailed privately to each applicant. We may ask a few questions first.");
+  assert.equal(decisionText({ announce_on: "2027-02-26" }, fmt), "We review applications on a rolling basis and email a decision privately to each applicant.");
+  assert.equal(decisionText({}, fmt), "We review applications on a rolling basis and email a decision privately to each applicant.");
+  assert.equal(decisionText({ announce_on: null, announce_note: "We may ask a few questions first" }, fmt), "We review applications on a rolling basis and email a decision privately to each applicant. We may ask a few questions first.");
   assert.match(COMMUNITY_WELCOME, /no fixed number of spots/);
   for (const decision of ["waitlisted", "declined"] as const) {
     const m = applicationDecisionEmail({ to: "a@x.org", name: "Ana", cohortName: "Cohort 1", decision, note: null });
     assert.match(m.text, /community board/);
-    assert.doesNotMatch(m.text, /spot opens|tech con/i);
+    assert.doesNotMatch(m.text, /spot opens|tech con|future cohort/i);
   }
 });

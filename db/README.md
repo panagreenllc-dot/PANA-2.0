@@ -57,8 +57,14 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 
 ## Preview seed (`db/seed-preview.mjs`)
 `npm run build` also runs `node db/seed-preview.mjs`, with the same guard as the runner: it only acts on a Vercel Preview
-build whose database is **not** production. It inserts "Cohort 1, Spring 2027" (by slug, never overwriting). Production is
-never seeded; John creates cohorts in **Admin → Incubator**.
+build whose database is **not** production. It inserts an always-open "PANA Incubator" program (slug `cohort-1-spring-2027`,
+no application window). It never overwrites a row John created; it only updates rows previously inserted by this seed
+(`created_by = 'seed:preview'`). Production is never seeded.
+
+Open enrollment (Nov 26, 2026) did not need a schema migration: the existing `incubator_cohorts` /
+`incubator_applications` tables are unchanged. Status `open` accepts applications year-round; leftover date columns
+are not used for gating and are not shown on the public site. After merge, the production program row can be renamed
+and have its dates cleared in **Admin → Incubator** (optional tidy-up; the public site already hides "Cohort 1" and the old window).
 
 It also resets the Clerk **dev** test member `pana-terms+clerk_test@example.com` (code 424242) to the pre-Phase-3 Terms
 version (`2026-10-draft`) on every preview build, so the "We updated our Terms" banner can be tested. Only

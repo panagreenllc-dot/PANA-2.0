@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireMember } from "@/lib/members";
-import { formatDateTime, formatDay } from "@/lib/datetime";
-import { cohortPhase, decisionText, parseUuid } from "@/lib/incubator";
+import { cohortPhase, decisionText, parseUuid, PROGRAM_PUBLIC_NAME } from "@/lib/incubator";
 import { applicableIdeas, hasLiveApplication, publicCohorts } from "@/lib/incubator-repo";
 import ApplicationForm from "./ApplicationForm";
 
@@ -25,15 +24,15 @@ export default async function ApplyPage({ searchParams }: { searchParams: Promis
 
   if (!cohort) {
     return shell(<>
-      <h1 className="mb-3 text-4xl font-bold tracking-tight">No cohort is open right now</h1>
-      <p className="mb-6 text-gray-400">Ask to be notified on the Incubator page and we&apos;ll email you when applications open.</p>
+      <h1 className="mb-3 text-4xl font-bold tracking-tight">Applications are temporarily closed</h1>
+      <p className="mb-6 text-gray-400">Ask to be notified on the Incubator page and we&apos;ll email you when applications reopen.</p>
       <Link href="/incubator#notify" className="text-green-400 underline">Back to the Incubator</Link>
     </>);
   }
   if (await hasLiveApplication(cohort.id, userId)) {
     return shell(<>
       <h1 className="mb-3 text-4xl font-bold tracking-tight">You&apos;ve already applied</h1>
-      <p className="mb-6 text-gray-400">Your application to {cohort.name} is on My PANA, where you can follow its status.</p>
+      <p className="mb-6 text-gray-400">Your application to the {PROGRAM_PUBLIC_NAME} is on My PANA, where you can follow its status.</p>
       <Link href="/me#incubator" className="text-green-400 underline">Go to My PANA</Link>
     </>);
   }
@@ -50,11 +49,9 @@ export default async function ApplyPage({ searchParams }: { searchParams: Promis
   }
 
   return shell(<>
-    <h1 className="mb-3 text-4xl font-bold tracking-tight">Apply to {cohort.name}</h1>
+    <h1 className="mb-3 text-4xl font-bold tracking-tight">Apply to the {PROGRAM_PUBLIC_NAME}</h1>
     <p className="mb-2 text-gray-400">
-      Applications close {formatDateTime(cohort.apply_closes_at)}.
-      {cohort.starts_on ? ` The program starts ${formatDay(cohort.starts_on)}.` : ""}
-      {` ${decisionText(cohort, formatDay)}`}
+      Applications are open year-round. {decisionText(cohort)}
     </p>
     <p className="mb-10 text-sm text-gray-500">Only you and PANA admins can see your application.</p>
     <ApplicationForm cohortId={cohort.id} ideas={ideas.map((i) => ({ id: i.id, name: i.project_name, status: i.status, stage: i.stage }))} />

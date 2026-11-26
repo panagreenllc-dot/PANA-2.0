@@ -78,7 +78,7 @@ export async function decideApplication(id: string, adminId: string, to: Decisio
   if (!p?.email || p.member_status !== "active" || !prefOn(p.email_prefs, "incubator")) return { ok: true, status: to, email: "skipped" };
   const res = await sendEmail(applicationDecisionEmail({
     to: p.email, name: p.name, cohortName: p.cohort_name, decision: to, note: p.decision_note,
-    startsText: p.starts_on ? formatDay(p.starts_on) : undefined, badge,
+    badge,
   }));
   return { ok: true, status: to, email: res.ok ? "sent" : (res as { skipped?: boolean }).skipped ? "skipped" : "failed" };
 }
@@ -114,7 +114,7 @@ export async function updateCohort(id: string, d: CohortInput): Promise<boolean>
 export async function setCohortStatus(id: string, status: string): Promise<boolean> {
   const rows = await sql`UPDATE incubator_cohorts SET status = ${status}, updated_at = now()
                          WHERE id::text = ${id} AND ${status} IN ('draft', 'open', 'closed', 'active', 'completed')
-                           AND (${status} <> 'open' OR apply_closes_at IS NOT NULL) RETURNING id`;
+                         RETURNING id`;
   return rows.length > 0;
 }
 

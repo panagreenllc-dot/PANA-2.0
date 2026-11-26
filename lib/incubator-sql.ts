@@ -14,16 +14,14 @@ export const PUBLIC_COHORTS_SQL = `
   ORDER BY (c.status = 'open') DESC, c.apply_closes_at ASC NULLS LAST, c.created_at DESC
   LIMIT 5`;
 
-/** The cohort if it accepts applications right now. $1 cohort id */
+/** The program if it accepts applications right now (status open = year-round). $1 cohort id */
 export const COHORT_ACCEPTING_SQL = `
   SELECT ${COHORT_COLS} FROM incubator_cohorts c
-  WHERE c.id::text = $1 AND c.status = 'open'
-    AND (c.apply_opens_at IS NULL OR c.apply_opens_at <= now())
-    AND (c.apply_closes_at IS NULL OR c.apply_closes_at > now())`;
+  WHERE c.id::text = $1 AND c.status = 'open'`;
 
 /**
- * Submit an application. Inserts only if the cohort is open right now, the idea belongs to the applicant and is
- * not rejected or withdrawn, and the applicant has no live application for this cohort.
+ * Submit an application. Inserts only if the program is open, the idea belongs to the applicant and is
+ * not rejected or withdrawn, and the applicant has no live application for this program.
  * $1 cohort id, $2 user id, $3 project id, $4 stage, $5 goals, $6 weekly hours, $7 needs text[], $8 team, $9 links jsonb
  */
 export const APPLY_INSERT_SQL = `
@@ -32,8 +30,6 @@ export const APPLY_INSERT_SQL = `
   FROM incubator_cohorts c
   JOIN projects p ON p.id::text = $3 AND p.user_id = $2 AND p.status IN ('pending', 'approved', 'changes_requested')
   WHERE c.id::text = $1 AND c.status = 'open'
-    AND (c.apply_opens_at IS NULL OR c.apply_opens_at <= now())
-    AND (c.apply_closes_at IS NULL OR c.apply_closes_at > now())
   ON CONFLICT (cohort_id, user_id) WHERE status NOT IN ('withdrawn', 'declined') DO NOTHING
   RETURNING id::text AS id`;
 

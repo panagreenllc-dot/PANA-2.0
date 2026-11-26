@@ -15,9 +15,9 @@ export default async function AdminIncubatorPage({ searchParams }: { searchParam
     <section className="space-y-10">
       <AdminNotice error={error} />
       <div>
-        <h2 className="mb-4 text-xl font-semibold">Incubator cohorts ({cohorts.length})</h2>
+        <h2 className="mb-4 text-xl font-semibold">Incubator programs ({cohorts.length})</h2>
         {cohorts.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-white/15 p-8 text-gray-400">No cohorts yet. Create the first one below.</p>
+          <p className="rounded-2xl border border-dashed border-white/15 p-8 text-gray-400">No programs yet. Create the first one below.</p>
         ) : (
           <ul className="space-y-3">
             {cohorts.map((c) => (
@@ -25,7 +25,7 @@ export default async function AdminIncubatorPage({ searchParams }: { searchParam
                 <div>
                   <Link href={`/admin/incubator/${c.id}`} className="text-lg font-semibold hover:text-green-300">{c.name}</Link>
                   <p className="text-xs text-gray-500">
-                    {c.status} ({cohortPhase(c as never)}) · closes {formatDateTime(c.apply_closes_at) || "—"}
+                    {c.status} ({cohortPhase(c as never)}) · {c.apply_closes_at ? `closes ${formatDateTime(c.apply_closes_at)}` : "open enrollment"}
                     {c.starts_on ? ` · starts ${formatDay(c.starts_on)}` : ""}{c.capacity ? ` · soft limit ${c.capacity}` : " · no fixed spots"}
                   </p>
                 </div>
@@ -40,8 +40,8 @@ export default async function AdminIncubatorPage({ searchParams }: { searchParam
         )}
       </div>
       <div>
-        <h2 className="mb-4 text-xl font-semibold">New cohort</h2>
-        <CohortForm action={createCohortAction} submitLabel="Create cohort" />
+        <h2 className="mb-4 text-xl font-semibold">New program</h2>
+        <CohortForm action={createCohortAction} submitLabel="Create program" />
       </div>
     </section>
   );

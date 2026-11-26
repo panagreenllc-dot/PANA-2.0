@@ -114,21 +114,21 @@ const FOOTER = `\n\nManage email preferences: ${SITE_URL}/me\n\nPANA 2.0 · Wher
 export function applicationReceivedEmail(p: { to: string; name: string; cohortName: string; ideaName: string | null; announceText?: string }): EmailMessage {
   return {
     to: [p.to],
-    subject: `We received your application to ${p.cohortName}`,
-    text: `Hi ${p.name},\n\nThanks for applying to the PANA incubator, ${p.cohortName}${p.ideaName ? `, with "${p.ideaName}"` : ""}.\n\nJohn and the PANA team review every application. ${p.announceText ?? "We'll email you when there's a decision."}\n\nYou can check the status or withdraw any time: ${SITE_URL}/me\n\nA reminder: PANA connects participants with mentors, community partners and sponsors. PANA itself doesn't give out money or equipment.${FOOTER}`,
+    subject: "We received your PANA Incubator application",
+    text: `Hi ${p.name},\n\nThanks for applying to the PANA Incubator${p.ideaName ? ` with "${p.ideaName}"` : ""}.\n\nJohn and the PANA team review every application on a rolling basis. ${p.announceText ?? "We'll email you when there's a decision."}\n\nYou can check the status or withdraw any time: ${SITE_URL}/me\n\nA reminder: PANA connects participants with mentors, community partners and sponsors. PANA itself doesn't give out money or equipment.${FOOTER}`,
   };
 }
 
 export function applicationDecisionEmail(p: { to: string; name: string; cohortName: string; decision: "accepted" | "waitlisted" | "declined"; note: string | null; startsText?: string; badge?: boolean }): EmailMessage {
   const subject = {
-    accepted: `You're in: welcome to ${p.cohortName}`,
-    waitlisted: `You're on the waitlist for ${p.cohortName}`,
-    declined: `Update on your ${p.cohortName} application`,
+    accepted: "You're in: welcome to the PANA Incubator",
+    waitlisted: "You're on the waitlist for the PANA Incubator",
+    declined: "Update on your PANA Incubator application",
   }[p.decision];
   const body = {
-    accepted: `Congratulations! You've been accepted into ${p.cohortName}.${p.startsText ? ` The program starts ${p.startsText}.` : ""} We'll be in touch with next steps.`,
-    waitlisted: `Your application for ${p.cohortName} is on the waitlist. If there's room later, we'll let you know. In the meantime you're welcome in the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board) and find a volunteer mentor (${SITE_URL}/mentors).`,
-    declined: `Thank you for applying to ${p.cohortName}. We aren't able to place you in this cohort, but we'd love for you to stay part of the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board), find a volunteer mentor (${SITE_URL}/mentors), and apply again to a future cohort.`,
+    accepted: "Congratulations! You've been accepted into the PANA Incubator. We'll be in touch with next steps.",
+    waitlisted: `Your PANA Incubator application is on the waitlist. If we can place you later, we'll let you know. In the meantime you're welcome in the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board) and find a volunteer mentor (${SITE_URL}/mentors).`,
+    declined: `Thank you for applying to the PANA Incubator. We aren't able to accept this application right now, but we'd love for you to stay part of the PANA community: ask questions and share progress on the community board (${SITE_URL}/community/board), find a volunteer mentor (${SITE_URL}/mentors), and apply again any time.`,
   }[p.decision];
   return {
     to: [p.to],
@@ -159,8 +159,8 @@ export function ideaReviewEmail(p: { to: string; ideaName: string; ideaId: strin
 export function cohortOpenEmail(p: { to: string; cohortName: string; closesText: string }): EmailMessage {
   return {
     to: [p.to],
-    subject: `Applications are open: ${p.cohortName}`,
-    text: `You asked us to tell you when PANA incubator applications open.\n\n${p.cohortName} is now accepting applications${p.closesText ? ` until ${p.closesText}` : ""}.\n\nApply here: ${SITE_URL}/incubator\n\nYou won't get this email again for this cohort. To stop incubator news, turn it off at ${SITE_URL}/me${FOOTER}`,
+    subject: "PANA Incubator applications are open",
+    text: `You asked us to tell you when PANA Incubator applications open.\n\nThe PANA Incubator is accepting applications year-round. Apply any time: ${SITE_URL}/incubator\n\nTo stop incubator news, turn it off at ${SITE_URL}/me${FOOTER}`,
   };
 }
 

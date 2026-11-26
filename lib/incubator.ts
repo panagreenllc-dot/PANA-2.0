@@ -13,6 +13,9 @@ export const NEEDS = [
   { value: "other", label: "Something else" },
 ] as const;
 
+/** Public-facing name. Admin can still label the internal program row anything; applicants never see "Cohort 1". */
+export const PROGRAM_PUBLIC_NAME = "PANA Incubator";
+
 export const COHORT_STATUSES = ["draft", "open", "closed", "active", "completed"] as const;
 export const COHORT_FORMATS = [
   { value: "virtual", label: "Virtual" }, { value: "hybrid", label: "Hybrid" }, { value: "in_person", label: "In person" },
@@ -34,7 +37,7 @@ export function parseUuid(raw: unknown): string | null {
   return typeof raw === "string" && UUID_RE.test(raw.trim()) ? raw.trim().toLowerCase() : null;
 }
 
-// ---------- Cohort window ----------
+// ---------- Program status (open enrollment is year-round) ----------
 
 export type CohortLike = {
   status: string;
@@ -43,19 +46,12 @@ export type CohortLike = {
 };
 export type CohortPhase = "draft" | "upcoming" | "open" | "closed" | "running" | "completed";
 
-const t = (v: Date | string | null) => (v === null ? null : new Date(v).getTime());
-
-/** What applicants should see right now. Only "open" accepts applications. */
-export function cohortPhase(c: CohortLike, now = new Date()): CohortPhase {
+/** What applicants should see right now. Status "open" accepts applications year-round; dates are not used for gating. */
+export function cohortPhase(c: CohortLike, _now = new Date()): CohortPhase {
   if (c.status === "draft") return "draft";
   if (c.status === "active") return "running";
   if (c.status === "completed") return "completed";
   if (c.status === "closed") return "closed";
-  const n = now.getTime();
-  const opens = t(c.apply_opens_at);
-  const closes = t(c.apply_closes_at);
-  if (opens !== null && n < opens) return "upcoming";
-  if (closes !== null && n >= closes) return "closed";
   return "open";
 }
 
@@ -105,7 +101,7 @@ export function parseApplication(fd: FormData): { data?: ApplicationInput; state
   const link = str(fd, "link");
   const ack = fd.get("ack") === "on";
 
-  if (!cohort_id) fe.cohort_id = "Choose a cohort.";
+  if (!cohort_id) fe.cohort_id = "The incubator isn't accepting applications right now.";
   if (!project_id) fe.project_id = "Choose one of your ideas.";
   if (!STAGES.some((s) => s.value === stage)) fe.stage = "Choose a stage.";
   if (goals.length < APP_LIMITS.goals[0]) fe.goals = `Tell us a bit more (at least ${APP_LIMITS.goals[0]} characters).`;
@@ -165,18 +161,16 @@ export function parseCohort(fd: FormData): { data?: CohortInput; error?: string 
   if (announce_note && announce_note.length > 200) return { error: "The decision note must be under 200 characters." };
   if (announce_note && /tech ?con|announc|public/i.test(announce_note)) return { error: "Decisions are private and sent by email only, so the note can't mention a public announcement." };
   if (capacity !== null && !(capacity >= 1 && capacity <= 500)) return { error: "Leave the soft limit empty (no fixed number), or use 1–500." };
-  if (status === "open" && !apply_closes_at) return { error: "Set an application close date before opening the cohort." };
   return { data: { name, slug, summary, format, status, apply_opens_at, apply_closes_at, starts_on, ends_on, announce_on, announce_note, capacity } };
 }
 
 /**
- * How applicants hear back. Decisions are private and emailed to each applicant; they're never announced publicly
- * (John, Nov 22, 2026). announce_on = the "emailed by" date; announce_note = an optional extra line for applicants.
+ * How applicants hear back. Decisions are private and emailed to each applicant on a rolling basis; they're never
+ * announced publicly (John, Nov 22, 2026). announce_note = an optional extra line for applicants.
  */
-export function decisionText(c: { announce_on?: string | null; announce_note?: string | null }, formatDayFn: (d: string) => string): string {
-  const when = c.announce_on ? formatDayFn(c.announce_on) : "";
-  const base = `Decisions are emailed privately to each applicant${when ? ` by ${when}` : ""}.`;
+export function decisionText(c: { announce_on?: string | null; announce_note?: string | null }, _formatDayFn?: (d: string) => string): string {
+  const base = "We review applications on a rolling basis and email a decision privately to each applicant.";
   return c.announce_note ? `${base} ${c.announce_note.replace(/\.?$/, ".")}` : base;
 }
 
-export const COMMUNITY_WELCOME = "There's no fixed number of spots. If you're not placed in a cohort, you're still welcome in the PANA community: post on the community board, find a mentor and keep building with members who support each other.";
+export const COMMUNITY_WELCOME = "There's no fixed number of spots. If you're not placed this time, you're still welcome in the PANA community: post on the community board, find a mentor and keep building with members who support each other.";

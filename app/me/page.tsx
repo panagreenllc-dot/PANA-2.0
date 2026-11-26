@@ -12,7 +12,7 @@ import { getProfileRow } from "@/lib/profiles-repo";
 import { emailPrefsAction } from "./actions";
 import { withdrawApplicationAction } from "@/app/incubator/actions";
 import { myApplications } from "@/lib/incubator-repo";
-import { APP_STATUS_LABEL, canWithdraw, decisionText } from "@/lib/incubator";
+import { APP_STATUS_LABEL, canWithdraw, decisionText, PROGRAM_PUBLIC_NAME } from "@/lib/incubator";
 import { formatDateTime, formatDay } from "@/lib/datetime";
 import { TERMS_UPDATED_ON } from "@/lib/gate";
 import { myPosts } from "@/lib/community-repo";
@@ -76,16 +76,15 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         </div>
         {saved === "applied" && <p className="mb-3 text-sm text-green-300">Application submitted. We&apos;ll email you when there&apos;s a decision.</p>}
         {saved === "withdrawn" && <p className="mb-3 text-sm text-gray-300">Application withdrawn.</p>}
-        {apps.length === 0 ? <p className="text-gray-500">You haven&apos;t applied to a cohort yet.</p> : (
+        {apps.length === 0 ? <p className="text-gray-500">You haven&apos;t applied yet.</p> : (
           <ul className="divide-y divide-white/10">
             {apps.map((a) => (
               <li key={a.id} className="space-y-2 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium">{a.cohort_name}</p>
+                    <p className="font-medium">{PROGRAM_PUBLIC_NAME}</p>
                     <p className="text-xs text-gray-500">
                       {a.project_name ? `With "${a.project_name}" · ` : ""}Applied {formatDateTime(a.created_at)}
-                      {a.starts_on ? ` · Starts ${formatDay(a.starts_on)}` : ""}
                     </p>
                   </div>
                   <span className={badge(a.status === "accepted" ? "accepted" : a.status === "submitted" || a.status === "under_review" || a.status === "waitlisted" ? "pending" : a.status)}>
@@ -243,7 +242,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="requests" defaultChecked={prefs.requests !== false} className="h-4 w-4 accent-green-500" /> New requests: collaboration on my ideas, offers of help on my needs, and requests for my organization&apos;s offers</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="reviews" defaultChecked={prefs.reviews !== false} className="h-4 w-4 accent-green-500" /> Review results for my ideas and needs</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator" defaultChecked={prefs.incubator !== false} className="h-4 w-4 accent-green-500" /> Updates on my incubator applications</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator_news" defaultChecked={prefs.incubator_news === true} className="h-4 w-4 accent-green-500" /> Tell me when incubator applications open</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="incubator_news" defaultChecked={prefs.incubator_news === true} className="h-4 w-4 accent-green-500" /> Occasional news about the PANA Incubator</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="community_digest" defaultChecked={prefs.community_digest === true} className="h-4 w-4 accent-green-500" /> Community digest: PANA announcements and upcoming events (about twice a month at most)</label>
           <p className="text-xs text-gray-500">Introduction emails for requests you accept or that are accepted are always sent, since they&apos;re how you connect.</p>
           <button className="rounded-lg border border-white/20 px-4 py-2 text-sm">Save preferences</button>

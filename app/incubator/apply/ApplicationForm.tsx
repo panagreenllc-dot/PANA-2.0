@@ -50,9 +50,9 @@ export default function ApplicationForm({ cohortId, ideas }: { cohortId: string;
           </div>
         </div>
         <div>
-          <label htmlFor="goals" className="mb-2 block text-sm text-gray-300">What do you want to achieve during the program? *</label>
+          <label htmlFor="goals" className="mb-2 block text-sm text-gray-300">What do you want to achieve in the incubator? *</label>
           <textarea id="goals" name="goals" required minLength={APP_LIMITS.goals[0]} maxLength={APP_LIMITS.goals[1]} rows={6}
-            defaultValue={String(v.goals ?? "")} placeholder="Your goals for the 12 weeks, and what success looks like." className={input} />
+            defaultValue={String(v.goals ?? "")} placeholder="Your goals, and what success looks like." className={input} />
           {err("goals")}
         </div>
         <fieldset>

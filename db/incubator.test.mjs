@@ -70,11 +70,11 @@ test("constraints: statuses, needs (access only, no money), hours, goals length,
   await pg.close();
 });
 
-test("apply: only while open, only with your own active idea, one live application per cohort", async () => {
+test("apply: only while status is open, only with your own active idea, one live application per program", async () => {
   const { pg, d, idea, cohort, apply } = await fixture();
   const open = await cohort();
-  const upcoming = await cohort({ opens: new Date(Date.now() + 86400000).toISOString(), closes: new Date(Date.now() + 2 * 86400000).toISOString() });
-  const past = await cohort({ opens: new Date(Date.now() - 2 * 86400000).toISOString(), closes: new Date(Date.now() - 86400000).toISOString() });
+  const dated = await cohort({ opens: new Date(Date.now() + 86400000).toISOString(), closes: new Date(Date.now() + 2 * 86400000).toISOString() });
+  const closed = await cohort({ status: "closed" });
   const draft = await cohort({ status: "draft" });
   const mine = await idea("alice");
   const pending = await idea("alice", "pending");
@@ -82,15 +82,19 @@ test("apply: only while open, only with your own active idea, one live applicati
   const bobs = await idea("bob");
 
   assert.equal((await d.query(COHORT_ACCEPTING_SQL, [open])).length, 1);
-  for (const c of [upcoming, past, draft]) {
+  assert.equal((await d.query(COHORT_ACCEPTING_SQL, [dated])).length, 1, "leftover dates do not block an open program");
+  const datedApp = await apply(dated, "alice", mine);
+  assert.equal(datedApp.length, 1, "can apply to an open program even if dates are in the future");
+  assert.equal((await d.query(WITHDRAW_APPLICATION_SQL, [datedApp[0].id, "alice"])).length, 1);
+  for (const c of [closed, draft]) {
     assert.equal((await d.query(COHORT_ACCEPTING_SQL, [c])).length, 0);
-    assert.equal((await apply(c, "alice", mine)).length, 0, "closed / upcoming / draft cohorts reject applications");
+    assert.equal((await apply(c, "alice", mine)).length, 0, "closed / draft programs reject applications");
   }
   assert.equal((await apply(open, "alice", bobs)).length, 0, "can't apply with someone else's idea");
   assert.equal((await apply(open, "alice", rejected)).length, 0, "can't apply with a rejected idea");
   const a1 = await apply(open, "alice", pending);
   assert.equal(a1.length, 1, "an idea still in review is fine");
-  assert.equal((await apply(open, "alice", mine)).length, 0, "one live application per cohort");
+  assert.equal((await apply(open, "alice", mine)).length, 0, "one live application per program");
   assert.equal((await d.query(WITHDRAW_APPLICATION_SQL, [a1[0].id, "bob"])).length, 0, "only the applicant withdraws");
   assert.equal((await d.query(WITHDRAW_APPLICATION_SQL, [a1[0].id, "alice"])).length, 1);
   assert.equal((await apply(open, "alice", mine)).length, 1, "can re-apply after withdrawing");
@@ -158,7 +162,7 @@ test("account deletion cascades; deleting an idea keeps the application without 
   await pg.close();
 });
 
-test("public cohort list hides drafts and completed cohorts; preview seed is idempotent and in ET", async () => {
+test("public cohort list hides drafts and completed cohorts; preview seed is idempotent open enrollment", async () => {
   const { pg, d, cohort } = await fixture();
   await cohort({ status: "draft", slug: "d1" });
   await cohort({ status: "completed", slug: "done1" });
@@ -167,13 +171,38 @@ test("public cohort list hides drafts and completed cohorts; preview seed is ide
   const pub = await d.query(PUBLIC_COHORTS_SQL);
   assert.deepEqual(pub.map((r) => r.slug), ["cohort-1-spring-2027"]);
   const [s] = pub;
+  assert.equal(s.name, "PANA Incubator");
   assert.equal(s.capacity, null, "no fixed number of spots");
   assert.equal(s.format, "virtual");
-  assert.equal(new Date(s.apply_opens_at).toISOString(), "2026-12-01T05:00:00.000Z", "Dec 1, 12:00 AM ET");
-  assert.equal(new Date(s.apply_closes_at).toISOString(), "2027-02-01T04:59:00.000Z", "Jan 31, 11:59 PM ET");
-  assert.deepEqual([s.starts_on, s.ends_on, s.announce_on], ["2027-03-01", "2027-05-23", "2027-02-26"]);
-  assert.equal((Date.parse(`${s.ends_on}T00:00:00Z`) - Date.parse(`${s.starts_on}T00:00:00Z`)) / 86400000 + 1, 84, "12 weeks");
+  assert.equal(s.status, "open");
+  assert.equal(s.apply_opens_at, null);
+  assert.equal(s.apply_closes_at, null);
+  assert.deepEqual([s.starts_on, s.ends_on, s.announce_on], [null, null, null]);
   assert.equal(SEED_COHORTS.length, 1);
+  await pg.close();
+});
+
+test("preview seed refreshes leftover Cohort 1 dates only on seed:preview rows", async () => {
+  const { pg, d } = await fixture();
+  await d.query(
+    `INSERT INTO incubator_cohorts (name, slug, summary, format, status, apply_opens_at, apply_closes_at, starts_on, ends_on, announce_on, capacity, created_by)
+     VALUES ('Cohort 1, Spring 2027', 'cohort-1-spring-2027', 'old', 'virtual', 'open', '2026-12-01T05:00:00Z', '2027-02-01T04:59:00Z',
+             '2027-03-01', '2027-05-23', '2027-02-26', 10, 'seed:preview')`);
+  assert.deepEqual(await seedPreview(d), ["cohort-1-spring-2027"]);
+  const [s] = await d.query("SELECT name, apply_opens_at, apply_closes_at, starts_on, ends_on, announce_on, capacity FROM incubator_cohorts WHERE slug = 'cohort-1-spring-2027'");
+  assert.equal(s.name, "PANA Incubator");
+  assert.equal(s.apply_opens_at, null);
+  assert.equal(s.apply_closes_at, null);
+  assert.equal(s.capacity, null);
+  assert.deepEqual(await seedPreview(d), [], "already up to date");
+  await d.query("DELETE FROM incubator_cohorts WHERE slug = 'cohort-1-spring-2027'");
+  await d.query(
+    `INSERT INTO incubator_cohorts (name, slug, format, status, apply_opens_at, apply_closes_at, created_by)
+     VALUES ('Cohort 1, Spring 2027', 'cohort-1-spring-2027', 'virtual', 'open', '2026-12-01T05:00:00Z', '2027-02-01T04:59:00Z', 'admin')`);
+  assert.deepEqual(await seedPreview(d), [], "does not overwrite a row John created");
+  const [kept] = await d.query("SELECT name, apply_closes_at IS NOT NULL AS has_close FROM incubator_cohorts WHERE slug = 'cohort-1-spring-2027'");
+  assert.equal(kept.name, "Cohort 1, Spring 2027");
+  assert.equal(kept.has_close, true);
   await pg.close();
 });
 

@@ -1,22 +1,23 @@
 #!/usr/bin/env node
-// Preview-only seed data (Phase 3 / P3-1): "Cohort 1, Spring 2027".
+// Preview-only seed data: an always-open "PANA Incubator" program (open enrollment, no apply window).
 // Runs from `npm run build` right after the migration runner, with the SAME guard: it only acts on a Vercel Preview
-// build whose database is NOT the production endpoint. Production is never seeded; John creates cohorts in admin.
-// Idempotent: inserts by slug and never overwrites a cohort that already exists (admin edits win).
+// build whose database is NOT the production endpoint. Production is never seeded.
+// Idempotent: inserts by slug (never overwriting a row John created). Rows previously inserted by this seed
+// (`created_by = 'seed:preview'`) are updated so reused preview databases pick up open enrollment.
 import { pathToFileURL } from "node:url";
 import { decide } from "./migrate.mjs";
 
 export const SEED_COHORTS = [{
-  name: "Cohort 1, Spring 2027",
-  slug: "cohort-1-spring-2027",
-  summary: "The first PANA incubator cohort: 12 weeks, fully virtual, with guidance, mentorship and access to resources through community partners. Apply with an idea you've shared on PANA.",
+  name: "PANA Incubator",
+  slug: "cohort-1-spring-2027",                 // same slug as production so a Neon preview copy is not duplicated
+  summary: "Open enrollment: apply any time, year-round. We review your idea and what you're looking for, then email you a decision.",
   format: "virtual",
-  status: "open",                               // shows "Opening soon" until applications open
-  apply_opens_at: "2026-12-01T05:00:00Z",       // Tue, Dec 1, 2026, 12:00 AM ET
-  apply_closes_at: "2027-02-01T04:59:00Z",      // Sun, Jan 31, 2027, 11:59 PM ET
-  starts_on: "2027-03-01",                      // Mon, Mar 1, 2027
-  ends_on: "2027-05-23",                        // 12 weeks later (Sun, May 23, 2027)
-  announce_on: "2027-02-26",                    // decisions emailed privately by this date (never announced publicly)
+  status: "open",
+  apply_opens_at: null,
+  apply_closes_at: null,
+  starts_on: null,
+  ends_on: null,
+  announce_on: null,
   announce_note: null,
   capacity: null,                               // no fixed number of spots
 }];
@@ -42,13 +43,24 @@ export async function resetStaleTermsFixtures(db, emails = STALE_TERMS_TEST_EMAI
 export async function seedPreview(db, cohorts = SEED_COHORTS) {
   const inserted = [];
   for (const c of cohorts) {
+    const vals = [c.name, c.slug, c.summary, c.format, c.status, c.apply_opens_at, c.apply_closes_at, c.starts_on, c.ends_on,
+      c.announce_on, c.announce_note, c.capacity];
+    const updated = await db.query(
+      `UPDATE incubator_cohorts SET name = $1, summary = $3, format = $4, status = $5,
+              apply_opens_at = $6, apply_closes_at = $7, starts_on = $8, ends_on = $9,
+              announce_on = $10, announce_note = $11, capacity = $12, updated_at = now()
+        WHERE slug = $2 AND created_by = 'seed:preview'
+          AND (name, summary, format, status, apply_opens_at, apply_closes_at, starts_on, ends_on, announce_on, announce_note, capacity)
+              IS DISTINCT FROM ($1, $3, $4, $5, $6::timestamptz, $7::timestamptz, $8::date, $9::date, $10::date, $11, $12)
+        RETURNING slug`,
+      vals);
+    if (updated.length) { inserted.push(c.slug); continue; }
     const rows = await db.query(
       `INSERT INTO incubator_cohorts (name, slug, summary, format, status, apply_opens_at, apply_closes_at, starts_on, ends_on,
                                       announce_on, announce_note, capacity, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'seed:preview')
        ON CONFLICT (slug) DO NOTHING RETURNING slug`,
-      [c.name, c.slug, c.summary, c.format, c.status, c.apply_opens_at, c.apply_closes_at, c.starts_on, c.ends_on,
-       c.announce_on, c.announce_note, c.capacity]);
+      vals);
     if (rows.length) inserted.push(c.slug);
   }
   return inserted;
