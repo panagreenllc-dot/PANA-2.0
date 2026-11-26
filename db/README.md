@@ -54,6 +54,7 @@ The runner creates and maintains `schema_migrations(version, name, checksum, app
 | 010 | 010_partners_offers_badges.sql (Phase 3 P3-2a, PR #10) | 2026-11-22 1:36 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("merge it") | Backup first: `pana-prod-pre-010-20261122-183627.json` (logical JSON dump, LSN 0/DDBA1B8, taken 1:36 PM EST). Dry run showed only 010 pending. Existing tables, columns, indexes, constraints and data (incl. `domino_*`) verified identical afterwards. Additive: `partners`, `partner_inquiries`, `resource_offers`, `incubator_credentials`. `BADGE_TOKEN_SECRET` (Sensitive) added to Production the same day. Rollback: drop the four tables. |
 | 011 | 011_needs_help_requests.sql (Phase 3 P3-2b, PR #11) | 2026-11-22 3:47 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("merge it") | Backup first: `pana-prod-pre-011-20261122-204650.json` (logical JSON dump, LSN 0/DE70B48, taken 3:46 PM EST). Dry run showed only 011 pending. Existing tables, columns, indexes, constraints and data (incl. `domino_*`) verified identical afterwards. Additive: `project_needs`, `help_offers`, `offer_requests`, `partner_contacts`, plus nullable `partners.pending_changes`. Rollback: `DROP TABLE help_offers, project_needs, offer_requests, partner_contacts; ALTER TABLE partners DROP COLUMN pending_changes;` |
 | 012 | 012_mentors_investors.sql (Phase 3 P3-3, PR #12) | 2026-11-22 6:28 PM EST | runner `runMigrations` over Neon WebSocket (port 5432 blocked from the box), owner approved in writing 2026-11-22 ("Merge it") | Backup first: `pana-prod-pre-012-20261122-232751.json` (logical JSON dump, LSN 0/DEDB078, taken 6:27 PM EST). Dry run showed only 012 pending. Existing tables, columns, indexes, constraints and data (incl. `domino_*`) verified identical afterwards, except the intended changes: new `projects.investor_interest_open` (NOT NULL DEFAULT false) and a wider `reports_target_type_check`. Additive: `mentor_profiles`, `investor_profiles`, `mentorship_requests`, `investor_interests`. Rollback: `DROP TABLE investor_interests, mentorship_requests, investor_profiles, mentor_profiles; ALTER TABLE projects DROP COLUMN investor_interest_open;` and restore the old reports check (`profile`, `idea`, `request`). |
+| 013 | 013_community_posts.sql (Phase 3 P3-4, PR #13) | 2026-11-23 9:58 AM EST | owner approved in writing 2026-11-23 ("merge it") | Backup first: `pana-prod-pre-013-20261123-145748.json` (logical JSON dump, LSN 0/E20AEB8, taken 9:57 AM EST). Dry run showed only 013 pending. Existing tables, columns and data (incl. `domino_*`) verified afterwards, except the intended changes (see below). Additive: `community_posts`, `event_agenda_items`, `event_speakers`, `member_posts`, `member_post_replies`, `community_digests`, `community_digest_recipients`, plus a wider `reports_target_type_check`. |
 
 ## Preview seed (`db/seed-preview.mjs`)
 `npm run build` also runs `node db/seed-preview.mjs`, with the same guard as the runner: it only acts on a Vercel Preview
@@ -98,8 +99,7 @@ Mentor/investor roles live in `mentor_profiles` / `investor_profiles` (SQL in `l
 
 ## Community feed, events and member board (`lib/community*.ts`, P3-4)
 
-**013 (`013_community_posts.sql`) is NOT on production yet.** It runs only on the Vercel Preview branch database until John
-approves it in writing; then: backup → dry run → apply → verify → merge → add a row to the applied log above.
+**013 (`013_community_posts.sql`) is on production** (applied 2026-11-23 9:58 AM EST; see the log above).
 
 - `community_posts` + `event_agenda_items` + `event_speakers`: John's announcements and events (Admin → Community). Times are
   typed in ET (`parseEasternLocal`) and stored in UTC. Price (`price_text`) and the registration link/note are plain fields,
@@ -112,7 +112,7 @@ approves it in writing; then: backup → dry run → apply → verify → merge 
   John's posts only; at most one every 14 days, sent 90 per day. `DIGEST_TARGETS_SQL` is the only query that reads emails.
 - `reports_target_type_check` is widened with `member_post` and `member_reply`.
 
-**Data changes inside 013 (prod effect at merge, guarded on the old values so re-runs are no-ops):**
+**Data changes inside 013 (already applied on production, guarded on the old values so re-runs are no-ops):**
 - Incubator cohort `cohort-1-spring-2027` (prod id `7fe7aedf-2f8c-40c2-9f6a-9b91186c16d0`): `capacity` 10 → NULL (no fixed
   spots; the column becomes nullable), `announce_on` 2027-02-21 → 2027-02-26 (date decisions are emailed by),
   `announce_note` "…announced at Treasure Coast Tech Con" → NULL. Application and program dates are unchanged.
